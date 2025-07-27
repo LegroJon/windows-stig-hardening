@@ -1,0 +1,22 @@
+{
+    "github.copilot.enable": {
+        "*": true,
+        "yaml": true,
+        "plaintext": true,
+        "markdown": true
+    },
+    "github.copilot.chat.welcomeMessage": "never",
+    "github.copilot.advanced": {
+        "debug.overrideEngine": "copilot-chat",
+        "debug.useNodeFetcher": true
+    },
+    "workbench.colorTheme": "Default Dark+",
+    "editor.wordWrap": "on",
+    "files.autoSave": "afterDelay",
+    "editor.suggestOnTriggerCharacters": true,
+    "editor.quickSuggestions": {
+        "other": true,
+        "comments": true,
+        "strings": true
+    }
+}
