@@ -1,0 +1,31 @@
+{
+    "assessment": {
+        "name": "Windows 11 STIG Assessment",
+        "version": "1.0.0",
+        "description": "DISA STIG compliance assessment for Windows 11",
+        "target_os": "Windows 11"
+    },
+    "scanning": {
+        "parallel_execution": true,
+        "max_threads": 10,
+        "timeout_seconds": 300,
+        "include_custom_rules": true
+    },
+    "reporting": {
+        "default_format": "HTML",
+        "include_evidence": true,
+        "include_fix_text": true,
+        "auto_open_report": false
+    },
+    "logging": {
+        "level": "INFO",
+        "max_log_size_mb": 10,
+        "max_log_files": 30,
+        "enable_debug": false
+    },
+    "rules": {
+        "core_rules_path": "./rules/core",
+        "custom_rules_path": "./rules/custom",
+        "skip_rules": []
+    }
+}
