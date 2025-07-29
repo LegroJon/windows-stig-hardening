@@ -15,6 +15,7 @@
     },
     "reporting": {
         "default_format": "HTML",
+        "export_formats": ["HTML", "CSV", "JSON"],
         "include_evidence": true,
         "include_fix_text": true,
         "auto_open_report": false,

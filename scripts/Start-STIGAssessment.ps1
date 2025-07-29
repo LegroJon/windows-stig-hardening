@@ -313,6 +313,9 @@ function Start-STIGAssessment {
         [hashtable]$Config
     )
     
+    # Start timing
+    $startTime = Get-Date
+    
     Write-STIGLog "Starting STIG assessment with $($Rules.Count) rules" -Level INFO
     $results = @()
     $compliantCount = 0
@@ -345,6 +348,10 @@ function Start-STIGAssessment {
     
     Write-Progress -Activity "STIG Assessment" -Completed
     
+    # Calculate duration
+    $endTime = Get-Date
+    $duration = ($endTime - $startTime).TotalSeconds
+    
     # Create assessment summary
     $summary = @{
         Assessment = @{
@@ -354,6 +361,7 @@ function Start-STIGAssessment {
             Computer = $env:COMPUTERNAME
             User = $env:USERNAME
             Administrator = Test-AdminPrivileges
+            Duration = $duration
         }
         Statistics = @{
             TotalRules = $totalRules
@@ -417,116 +425,444 @@ function Generate-HTMLReport {
     $nonCompliantRules = $Data.Results | Where-Object { $_.Status -eq "Non-Compliant" }
     $errorRules = $Data.Results | Where-Object { $_.Status -eq "Error" }
     
+    # Calculate risk score based on non-compliance
+    $riskScore = [math]::Round(($nonCompliantRules.Count / $Data.Statistics.TotalRules) * 100, 1)
+    $riskLevel = switch ($riskScore) {
+        { $_ -le 10 } { @{text="LOW"; color="#27ae60"; bg="#d5f4e6"} }
+        { $_ -le 25 } { @{text="MODERATE"; color="#f39c12"; bg="#fef9e7"} }
+        { $_ -le 50 } { @{text="HIGH"; color="#e67e22"; bg="#fdf2e9"} }
+        default { @{text="CRITICAL"; color="#e74c3c"; bg="#fadbd8"} }
+    }
+    
     $html = @"
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Windows 11 STIG Assessment Report</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Windows 11 STIG Assessment - Executive Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
-        .header { background-color: #2c3e50; color: white; padding: 20px; border-radius: 5px; }
-        .summary { background-color: white; padding: 20px; margin: 20px 0; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .statistics { display: flex; justify-content: space-around; margin: 20px 0; }
-        .stat-box { text-align: center; padding: 15px; background-color: #ecf0f1; border-radius: 5px; margin: 0 10px; }
-        .stat-number { font-size: 2em; font-weight: bold; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        
+        /* Header Section */
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            transform: translate(30px, -30px);
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .header-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .header-info {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1em;
+        }
+        
+        /* Executive Summary */
+        .executive-summary {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .summary-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        .risk-badge {
+            background: $($riskLevel.bg);
+            color: $($riskLevel.color);
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 1.1em;
+            border: 2px solid $($riskLevel.color);
+        }
+        
+        /* Statistics Dashboard */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+        }
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+        .stat-card:hover { transform: translateY(-5px); }
+        .stat-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .stat-label {
+            font-size: 1.1em;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
         .compliant { color: #27ae60; }
         .non-compliant { color: #e74c3c; }
         .error { color: #f39c12; }
-        .rules-section { background-color: white; margin: 20px 0; padding: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .rule-item { border-left: 4px solid #bdc3c7; padding: 10px; margin: 10px 0; background-color: #f8f9fa; }
-        .rule-compliant { border-left-color: #27ae60; }
-        .rule-non-compliant { border-left-color: #e74c3c; }
-        .rule-error { border-left-color: #f39c12; }
-        .rule-id { font-weight: bold; color: #2c3e50; }
-        .rule-status { font-weight: bold; }
-        .evidence { font-family: monospace; background-color: #f1f2f6; padding: 5px; border-radius: 3px; margin: 5px 0; }
-        .fix-text { background-color: #dff0d8; padding: 10px; border-radius: 3px; margin: 5px 0; }
+        .compliance-rate { color: #3498db; }
+        
+        /* Compliance Progress Bar */
+        .progress-container {
+            background: #ecf0f1;
+            border-radius: 25px;
+            padding: 8px;
+            margin: 20px 0;
+        }
+        .progress-bar {
+            background: linear-gradient(90deg, #27ae60, #2ecc71);
+            height: 30px;
+            border-radius: 20px;
+            width: $($Data.Statistics.CompliancePercentage)%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            transition: width 0.5s ease;
+        }
+        
+        /* Rule Sections */
+        .rules-section {
+            background: white;
+            margin: 25px 0;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .section-header {
+            padding: 20px 30px;
+            font-size: 1.5em;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .header-compliant { background: linear-gradient(135deg, #27ae60, #2ecc71); color: white; }
+        .header-non-compliant { background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; }
+        .header-error { background: linear-gradient(135deg, #f39c12, #e67e22); color: white; }
+        
+        .rules-container { padding: 20px; }
+        .rule-item {
+            border-left: 5px solid #bdc3c7;
+            padding: 20px;
+            margin: 15px 0;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 0 10px 10px 0;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .rule-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .rule-compliant { border-left-color: #27ae60; background: linear-gradient(135deg, #d5f4e6, #a9dfbf); }
+        .rule-non-compliant { border-left-color: #e74c3c; background: linear-gradient(135deg, #fadbd8, #f1948a); }
+        .rule-error { border-left-color: #f39c12; background: linear-gradient(135deg, #fef9e7, #f7dc6f); }
+        
+        .rule-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .rule-id {
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #2c3e50;
+        }
+        .rule-status {
+            font-weight: bold;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+        }
+        .status-compliant { background: #27ae60; color: white; }
+        .status-non-compliant { background: #e74c3c; color: white; }
+        .status-error { background: #f39c12; color: white; }
+        
+        .evidence {
+            font-family: 'Courier New', monospace;
+            background: rgba(52, 73, 94, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 3px solid #3498db;
+            overflow-x: auto;
+        }
+        .fix-text {
+            background: linear-gradient(135deg, #d5f4e6, #a9dfbf);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 3px solid #27ae60;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .header h1 { font-size: 2em; }
+            .rule-item { padding: 15px; }
+        }
+        
+        /* Print Styles */
+        @media print {
+            body { background: white; }
+            .container { max-width: none; }
+            .stat-card, .rules-section { box-shadow: none; border: 1px solid #ddd; }
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🛡️ Windows 11 STIG Assessment Report</h1>
-        <p><strong>Assessment:</strong> $($Data.Assessment.Name) v$($Data.Assessment.Version)</p>
-        <p><strong>Computer:</strong> $($Data.Assessment.Computer) | <strong>User:</strong> $($Data.Assessment.User) | <strong>Admin:</strong> $($Data.Assessment.Administrator)</p>
-        <p><strong>Generated:</strong> $($Data.Assessment.Timestamp)</p>
-    </div>
-    
-    <div class="summary">
-        <h2>📊 Assessment Summary</h2>
-        <div class="statistics">
-            <div class="stat-box">
-                <div class="stat-number compliant">$($Data.Statistics.Compliant)</div>
-                <div>Compliant</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-number non-compliant">$($Data.Statistics.NonCompliant)</div>
-                <div>Non-Compliant</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-number error">$($Data.Statistics.Errors)</div>
-                <div>Errors</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-number">$($Data.Statistics.CompliancePercentage)%</div>
-                <div>Compliance Rate</div>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <i class="fas fa-shield-alt"></i>
+                Windows 11 STIG Assessment Report
+            </h1>
+            <div class="header-grid">
+                <div class="header-info">
+                    <div class="info-item">
+                        <i class="fas fa-desktop"></i>
+                        <span><strong>Assessment:</strong> $($Data.Assessment.Name) v$($Data.Assessment.Version)</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-computer"></i>
+                        <span><strong>Computer:</strong> $($Data.Assessment.Computer)</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-user"></i>
+                        <span><strong>User:</strong> $($Data.Assessment.User)</span>
+                    </div>
+                </div>
+                <div class="header-info">
+                    <div class="info-item">
+                        <i class="fas fa-user-shield"></i>
+                        <span><strong>Admin:</strong> $($Data.Assessment.Administrator)</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-calendar"></i>
+                        <span><strong>Generated:</strong> $($Data.Assessment.Timestamp)</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-clock"></i>
+                        <span><strong>Duration:</strong> $([math]::Round($Data.Assessment.Duration, 2)) seconds</span>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
+        
+        <div class="executive-summary">
+            <div class="summary-header">
+                <h2><i class="fas fa-chart-line"></i> Executive Summary</h2>
+                <div class="risk-badge">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    RISK LEVEL: $($riskLevel.text)
+                </div>
+            </div>
+            
+            <div class="progress-container">
+                <div class="progress-bar">
+                    $($Data.Statistics.CompliancePercentage)% Compliant
+                </div>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon compliant">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-number compliant">$($Data.Statistics.Compliant)</div>
+                    <div class="stat-label">Compliant Rules</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon non-compliant">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div class="stat-number non-compliant">$($Data.Statistics.NonCompliant)</div>
+                    <div class="stat-label">Non-Compliant Rules</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon error">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <div class="stat-number error">$($Data.Statistics.Errors)</div>
+                    <div class="stat-label">Error Rules</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon compliance-rate">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                    <div class="stat-number compliance-rate">$($Data.Statistics.CompliancePercentage)%</div>
+                    <div class="stat-label">Compliance Rate</div>
+                </div>
+            </div>
+        </div>
 "@
 
     if ($nonCompliantRules.Count -gt 0) {
         $html += @"
-    <div class="rules-section">
-        <h2 class="non-compliant">❌ Non-Compliant Rules ($($nonCompliantRules.Count))</h2>
+        <div class="rules-section">
+            <div class="section-header header-non-compliant">
+                <i class="fas fa-times-circle"></i>
+                Non-Compliant Rules ($($nonCompliantRules.Count))
+            </div>
+            <div class="rules-container">
 "@
         foreach ($rule in $nonCompliantRules) {
             $html += @"
-        <div class="rule-item rule-non-compliant">
-            <div class="rule-id">$($rule.RuleID)</div>
-            <div class="rule-status non-compliant">Status: $($rule.Status)</div>
-            <div class="evidence"><strong>Evidence:</strong> $($rule.Evidence)</div>
-            <div class="fix-text"><strong>Remediation:</strong> $($rule.FixText)</div>
-        </div>
+                <div class="rule-item rule-non-compliant">
+                    <div class="rule-header">
+                        <div class="rule-id">$($rule.RuleID)</div>
+                        <div class="rule-status status-non-compliant">Non-Compliant</div>
+                    </div>
+                    <div class="evidence"><strong><i class="fas fa-search"></i> Evidence:</strong><br>$($rule.Evidence)</div>
+                    <div class="fix-text"><strong><i class="fas fa-tools"></i> Remediation:</strong><br>$($rule.FixText)</div>
+                </div>
 "@
         }
-        $html += "    </div>"
+        $html += @"
+            </div>
+        </div>
+"@
     }
 
     if ($errorRules.Count -gt 0) {
         $html += @"
-    <div class="rules-section">
-        <h2 class="error">⚠️ Rules with Errors ($($errorRules.Count))</h2>
+        <div class="rules-section">
+            <div class="section-header header-error">
+                <i class="fas fa-exclamation-circle"></i>
+                Rules with Errors ($($errorRules.Count))
+            </div>
+            <div class="rules-container">
 "@
         foreach ($rule in $errorRules) {
             $html += @"
-        <div class="rule-item rule-error">
-            <div class="rule-id">$($rule.RuleID)</div>
-            <div class="rule-status error">Status: $($rule.Status)</div>
-            <div class="evidence"><strong>Error:</strong> $($rule.ErrorMessage)</div>
-        </div>
+                <div class="rule-item rule-error">
+                    <div class="rule-header">
+                        <div class="rule-id">$($rule.RuleID)</div>
+                        <div class="rule-status status-error">Error</div>
+                    </div>
+                    <div class="evidence"><strong><i class="fas fa-bug"></i> Error Details:</strong><br>$($rule.ErrorMessage)</div>
+                </div>
 "@
         }
-        $html += "    </div>"
+        $html += @"
+            </div>
+        </div>
+"@
     }
 
     if ($compliantRules.Count -gt 0) {
         $html += @"
-    <div class="rules-section">
-        <h2 class="compliant">✅ Compliant Rules ($($compliantRules.Count))</h2>
+        <div class="rules-section">
+            <div class="section-header header-compliant">
+                <i class="fas fa-check-circle"></i>
+                Compliant Rules ($($compliantRules.Count))
+            </div>
+            <div class="rules-container">
 "@
         foreach ($rule in $compliantRules) {
             $html += @"
-        <div class="rule-item rule-compliant">
-            <div class="rule-id">$($rule.RuleID)</div>
-            <div class="rule-status compliant">Status: $($rule.Status)</div>
-            <div class="evidence"><strong>Evidence:</strong> $($rule.Evidence)</div>
-        </div>
+                <div class="rule-item rule-compliant">
+                    <div class="rule-header">
+                        <div class="rule-id">$($rule.RuleID)</div>
+                        <div class="rule-status status-compliant">Compliant</div>
+                    </div>
+                    <div class="evidence"><strong><i class="fas fa-check"></i> Evidence:</strong><br>$($rule.Evidence)</div>
+                </div>
 "@
         }
-        $html += "    </div>"
+        $html += @"
+            </div>
+        </div>
+"@
     }
 
     $html += @"
+    </div>
+    
+    <script>
+        // Add interactive features
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate progress bar
+            const progressBar = document.querySelector('.progress-bar');
+            if (progressBar) {
+                progressBar.style.width = '0%';
+                setTimeout(() => {
+                    progressBar.style.width = '$($Data.Statistics.CompliancePercentage)%';
+                }, 500);
+            }
+            
+            // Add click handlers for rule items
+            document.querySelectorAll('.rule-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    this.style.transform = this.style.transform === 'translateX(10px)' ? 'translateX(5px)' : 'translateX(10px)';
+                });
+            });
+        });
+    </script>
 </body>
 </html>
 "@
