@@ -28,6 +28,9 @@
 .PARAMETER WhatIf
     Show what would be assessed without running actual checks
 
+.PARAMETER RequestAdmin
+    Automatically request administrator privileges if not already elevated
+
 .EXAMPLE
     .\Start-STIGAssessment.ps1
     Run basic STIG assessment with default settings
@@ -71,12 +74,52 @@ param(
     [string]$LogLevel,
 
     [Parameter(Mandatory = $false)]
-    [switch]$WhatIf
+    [switch]$WhatIf,
+
+    [Parameter(Mandatory = $false)]
+    [switch]$RequestAdmin
 )
 
 # Set error handling
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "Continue"
+
+# Check for administrator privileges and request if needed
+function Test-IsAdministrator {
+    $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = New-Object Security.Principal.WindowsPrincipal($currentUser)
+    return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
+if ($RequestAdmin -and -not (Test-IsAdministrator)) {
+    Write-Host "`n🛡️ Requesting Administrator Privileges..." -ForegroundColor Yellow
+    Write-Host "Some STIG checks require elevated privileges for accurate assessment." -ForegroundColor Gray
+    
+    try {
+        # Build argument list for elevated session
+        $argList = @(
+            "-ExecutionPolicy", "Bypass",
+            "-File", "`"$PSCommandPath`""
+        )
+        
+        # Add original parameters (excluding RequestAdmin to avoid recursion)
+        if ($OutputPath) { $argList += "-OutputPath", "`"$OutputPath`"" }
+        if ($ConfigPath -ne ".\config\settings.json") { $argList += "-ConfigPath", "`"$ConfigPath`"" }
+        if ($IncludeCustomRules) { $argList += "-IncludeCustomRules" }
+        if ($Format) { $argList += "-Format", $Format }
+        if ($RuleFilter) { $argList += "-RuleFilter", "`"$RuleFilter`"" }
+        if ($LogLevel) { $argList += "-LogLevel", $LogLevel }
+        if ($WhatIf) { $argList += "-WhatIf" }
+        
+        Start-Process -FilePath "PowerShell.exe" -Verb RunAs -ArgumentList $argList
+        Write-Host "Elevated session started. This window will close." -ForegroundColor Green
+        exit 0
+    }
+    catch {
+        Write-Host "[ERROR] Failed to request elevation: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "Continuing with current privileges (some checks may be limited)..." -ForegroundColor Yellow
+    }
+}
 
 #region Helper Functions
 
