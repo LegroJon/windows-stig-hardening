@@ -15,7 +15,7 @@
     Launch the quick assessment menu
 #>
 
-Write-Host "`n🛡️ Windows 11 STIG Assessment Tool" -ForegroundColor Cyan
+Write-Host "`n[STIG] Windows 11 STIG Assessment Tool" -ForegroundColor Cyan
 Write-Host "=" * 40 -ForegroundColor Cyan
 
 Write-Host "`nChoose your launcher:" -ForegroundColor White

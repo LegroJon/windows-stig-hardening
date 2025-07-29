@@ -48,32 +48,32 @@ do {
     
     switch ($choice) {
         "1" {
-            Write-Host "🚀 Running assessment with HTML report..." -ForegroundColor Green
+            Write-Host "[HTML] Running assessment with HTML report..." -ForegroundColor Green
             .\scripts\Start-STIGAssessment.ps1 -Format HTML -RequestAdmin
             break
         }
         "2" {
-            Write-Host "🚀 Running assessment with CSV report..." -ForegroundColor Green
+            Write-Host "[CSV] Running assessment with CSV report..." -ForegroundColor Green
             .\scripts\Start-STIGAssessment.ps1 -Format CSV -RequestAdmin
             break
         }
         "3" {
-            Write-Host "🚀 Running assessment with JSON report..." -ForegroundColor Green
+            Write-Host "[JSON] Running assessment with JSON report..." -ForegroundColor Green
             .\scripts\Start-STIGAssessment.ps1 -Format JSON -RequestAdmin
             break
         }
         "4" {
-            Write-Host "🚀 Running assessment with ALL report formats..." -ForegroundColor Cyan
+            Write-Host "[ALL] Running assessment with ALL report formats..." -ForegroundColor Cyan
             .\scripts\Start-STIGAssessment.ps1 -Format ALL -RequestAdmin
             break
         }
         "5" {
-            Write-Host "⚡ Running quick assessment..." -ForegroundColor Yellow
+            Write-Host "[QUICK] Running quick assessment..." -ForegroundColor Yellow
             .\scripts\Start-STIGAssessment.ps1
             break
         }
         "6" {
-            Write-Host "🎯 Running critical rules assessment..." -ForegroundColor Red
+            Write-Host "[CRITICAL] Running critical rules assessment..." -ForegroundColor Red
             .\scripts\Start-STIGAssessment.ps1 -RuleFilter "CAT I" -Format HTML -RequestAdmin
             break
         }
@@ -89,7 +89,7 @@ do {
 
 # After assessment completes
 Write-Host ""
-Write-Host "📁 Check the 'reports' folder for your generated files!" -ForegroundColor Green
+Write-Host "[REPORTS] Check the 'reports' folder for your generated files!" -ForegroundColor Green
 Write-Host ""
 
 # Ask if they want to open the reports folder
