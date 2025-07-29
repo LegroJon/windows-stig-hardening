@@ -17,7 +17,7 @@
     Include custom organizational rules in assessment
 
 .PARAMETER Format
-    Report output format. Options: JSON, HTML, CSV. Default: JSON
+    Report output format. Options: JSON, HTML, CSV, ALL. Can specify multiple formats. Default: JSON
 
 .PARAMETER RuleFilter
     Filter rules by category or severity. Examples: "CAT I", "SO", "WN11-SO-000001"
@@ -35,6 +35,14 @@
 .EXAMPLE
     .\Start-STIGAssessment.ps1 -OutputPath "C:\Reports" -Format HTML
     Run assessment with custom output location and HTML report
+
+.EXAMPLE
+    .\Start-STIGAssessment.ps1 -Format HTML,CSV
+    Generate both HTML and CSV reports
+
+.EXAMPLE
+    .\Start-STIGAssessment.ps1 -Format ALL
+    Generate all available report formats (JSON, HTML, CSV)
 
 .EXAMPLE
     .\Start-STIGAssessment.ps1 -RuleFilter "CAT I" -LogLevel DEBUG
@@ -60,8 +68,8 @@ param(
     [switch]$IncludeCustomRules,
 
     [Parameter(Mandatory = $false)]
-    [ValidateSet("JSON", "HTML", "CSV")]
-    [string]$Format,
+    [ValidateSet("JSON", "HTML", "CSV", "ALL")]
+    [string[]]$Format,
 
     [Parameter(Mandatory = $false)]
     [string]$RuleFilter,
@@ -100,7 +108,7 @@ if ($RequestAdmin -and -not (Test-IsAdministrator)) {
         if ($OutputPath) { $argList += "-OutputPath", "`"$OutputPath`"" }
         if ($ConfigPath -ne ".\config\settings.json") { $argList += "-ConfigPath", "`"$ConfigPath`"" }
         if ($IncludeCustomRules) { $argList += "-IncludeCustomRules" }
-        if ($Format) { $argList += "-Format", $Format }
+        if ($Format) { $argList += "-Format", ($Format -join ",") }
         if ($RuleFilter) { $argList += "-RuleFilter", "`"$RuleFilter`"" }
         if ($LogLevel) { $argList += "-LogLevel", $LogLevel }
         if ($WhatIf) { $argList += "-WhatIf" }
@@ -583,7 +591,14 @@ try {
     
     # Override config with parameters
     if ($LogLevel) { $script:Config.logging.level = $LogLevel }
-    if ($Format) { $script:Config.reporting.default_format = $Format }
+    if ($Format) { 
+        # Handle multiple formats and "ALL" option
+        if ($Format -contains "ALL") {
+            $script:Config.reporting.export_formats = @("JSON", "HTML", "CSV")
+        } else {
+            $script:Config.reporting.export_formats = $Format
+        }
+    }
     if ($IncludeCustomRules) { $script:Config.scanning.include_custom_rules = $true }
     
     # Set output path
@@ -637,16 +652,28 @@ try {
     Show-AssessmentResults -Results $assessmentResults
     
     # Export reports
-    $reportFormats = if ($Format) { @($Format) } else { $script:Config.reporting.export_formats }
+    $reportFormats = if ($Format) { 
+        if ($Format -contains "ALL") { 
+            @("JSON", "HTML", "CSV") 
+        } else { 
+            $Format 
+        }
+    } else { 
+        $script:Config.reporting.export_formats 
+    }
+    
+    Write-Host "`n📄 Generating Reports..." -ForegroundColor Cyan
     
     foreach ($reportFormat in $reportFormats) {
         try {
+            Write-Host "  Creating $reportFormat report..." -ForegroundColor Yellow
             $reportPath = Export-STIGReport -AssessmentData $assessmentResults -OutputPath $OutputPath -Format $reportFormat
-            Write-Host "📄 Report generated: " -NoNewline -ForegroundColor White
-            Write-Host $reportPath -ForegroundColor Green
+            Write-Host "  ✅ $reportFormat report: " -NoNewline -ForegroundColor Green
+            Write-Host $reportPath -ForegroundColor White
         }
         catch {
             Write-STIGLog "Failed to generate $reportFormat report: $($_.Exception.Message)" -Level ERROR
+            Write-Host "  ❌ Failed to generate $reportFormat report" -ForegroundColor Red
         }
     }
     
