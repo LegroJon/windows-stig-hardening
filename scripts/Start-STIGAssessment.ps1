@@ -259,15 +259,13 @@ function Invoke-STIGRule {
             $functionName = $functionMatch.Groups[1].Value
             Write-STIGLog "Found function: $functionName" -Level DEBUG
             
-            # Execute the rule function with timeout
-            $job = Start-Job -ScriptBlock {
-                param($funcName, $ruleFile)
-                . $ruleFile
-                & $funcName
-            } -ArgumentList $functionName, $RuleFile.FullName
-            
-            $result = Wait-Job -Job $job -Timeout $TimeoutSeconds | Receive-Job
-            Remove-Job -Job $job -Force
+            # Execute the rule function directly (simpler than jobs for now)
+            try {
+                $result = & $functionName
+            }
+            catch {
+                throw "Error executing function: $($_.Exception.Message)"
+            }
             
             $stopwatch.Stop()
             $ruleResult.ExecutionTime = $stopwatch.ElapsedMilliseconds
