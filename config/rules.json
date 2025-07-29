@@ -1,0 +1,51 @@
+{
+    "metadata": {
+        "version": "1.0.0",
+        "stig_version": "Windows 11 STIG V1R5",
+        "last_updated": "2025-07-28",
+        "total_rules": 1
+    },
+    "categories": {
+        "SO": "System Options",
+        "AU": "Audit and Accountability", 
+        "AC": "Access Control",
+        "IA": "Identification and Authentication",
+        "SC": "System and Communications Protection",
+        "SI": "System and Information Integrity",
+        "CM": "Configuration Management"
+    },
+    "severities": {
+        "CAT I": {
+            "level": "High",
+            "description": "Any vulnerability that can result in loss of Confidentiality, Availability, or Integrity"
+        },
+        "CAT II": {
+            "level": "Medium", 
+            "description": "Any vulnerability that can result in loss of Confidentiality, Availability, or Integrity with mitigating factors"
+        },
+        "CAT III": {
+            "level": "Low",
+            "description": "Any vulnerability that degrades measures to protect against loss of Confidentiality, Availability, or Integrity"
+        }
+    },
+    "rules": {
+        "WN11-SO-000001": {
+            "title": "SMBv1 Protocol Must Be Disabled",
+            "category": "SO",
+            "severity": "CAT I",
+            "description": "SMBv1 protocol must be disabled on Windows 11 systems to prevent security vulnerabilities",
+            "implementation_status": "Implemented",
+            "test_function": "Test-DisableSMBv1",
+            "script_file": "WN11-SO-000001.ps1",
+            "references": {
+                "stig_id": "WN11-SO-000001",
+                "cci": ["CCI-000366"],
+                "nist": ["CM-6 b"],
+                "disa_rule_id": "SV-253319r829025_rule"
+            },
+            "check_content": "Verify SMB1Protocol Windows Optional Feature is disabled",
+            "fix_text": "Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol -NoRestart",
+            "notes": "Requires administrative privileges. System restart may be required."
+        }
+    }
+}
