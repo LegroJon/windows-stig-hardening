@@ -538,6 +538,9 @@ function Show-AssessmentSummary {
     Write-Host "`n" -NoNewline
     Write-Host "Windows 11 STIG Assessment Tool" -ForegroundColor Cyan
     Write-Host "=" * 50 -ForegroundColor Cyan
+    Write-Host "LIVE COMPLIANCE ASSESSMENT" -ForegroundColor Yellow
+    Write-Host "Testing Real Windows Security Settings (Not Development Tests)" -ForegroundColor Gray
+    Write-Host ""
     Write-Host "Assessment: " -NoNewline -ForegroundColor White
     Write-Host $Config.assessment.name -ForegroundColor Green
     Write-Host "Version:    " -NoNewline -ForegroundColor White

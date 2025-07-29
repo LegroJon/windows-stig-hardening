@@ -19,6 +19,8 @@ A modular, CLI-based PowerShell tool for assessing DISA STIG compliance on Windo
 - **Privileges**: Administrator rights required for system assessment
 - **Optional**: Pester module for running tests
 
+> 📖 **Complete Setup Instructions**: See [docs/SETUP_GUIDE.md](docs/SETUP_GUIDE.md) for detailed installation steps
+
 ## 🚀 Quick Start
 
 ### 1. Clone the Repository
@@ -55,6 +57,11 @@ windows-stig-hardening/
 │   ├── Start-STIGAssessment.ps1  # Main assessment script
 │   ├── Export-STIGReport.ps1     # Report generation
 │   └── Test-Prerequisites.ps1    # System requirements check
+├── 📁 docs/                  # Complete documentation
+│   ├── SETUP_GUIDE.md           # Installation instructions
+│   ├── TESTING_EXPLAINED.md     # Development vs compliance testing
+│   ├── DEVELOPMENT_PLAN.md      # Technical roadmap
+│   └── STIG_RESOURCES.md        # Official DISA references
 ├── 📁 config/                # Configuration files
 │   ├── settings.json             # Main tool settings
 │   └── rules.json               # Rule metadata
@@ -100,18 +107,19 @@ function Test-[RuleName] {
 
 ## 🧪 Testing
 
-Run the test suite to validate rule logic:
+The tool has two separate testing systems:
+- **Development Tests** (Pester): Validates code logic during development
+- **STIG Assessment**: Tests real Windows security compliance
 
 ```powershell
-# Install Pester (if not already installed)
-Install-Module -Name Pester -Force -SkipPublisherCheck
+# Run development tests (Pester)
+.\scripts\Run-Tests.ps1
 
-# Run all tests
-Invoke-Pester
-
-# Run specific test file
-Invoke-Pester -Path ".\tests\Rules.Tests.ps1"
+# Run STIG compliance assessment
+.\scripts\Start-STIGAssessment.ps1 -RequestAdmin
 ```
+
+> 📖 **Understanding the Difference**: See [docs/TESTING_EXPLAINED.md](docs/TESTING_EXPLAINED.md) for complete details
 
 ## 🤝 Contributing
 
@@ -129,7 +137,16 @@ Invoke-Pester -Path ".\tests\Rules.Tests.ps1"
 4. Add corresponding Pester tests
 5. Update rule metadata in `config/rules.json`
 
-## 📚 Resources
+## 📚 Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [docs/SETUP_GUIDE.md](docs/SETUP_GUIDE.md) | Complete installation and setup instructions |
+| [docs/TESTING_EXPLAINED.md](docs/TESTING_EXPLAINED.md) | Development tests vs STIG compliance assessment |
+| [docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md) | Technical roadmap and architecture |
+| [docs/STIG_RESOURCES.md](docs/STIG_RESOURCES.md) | Official DISA STIG references |
+
+## 🔗 External Resources
 
 - [DISA STIG Library](https://public.cyber.mil/stigs/)
 - [Windows 11 STIG Documentation](https://public.cyber.mil/stigs/downloads/)
