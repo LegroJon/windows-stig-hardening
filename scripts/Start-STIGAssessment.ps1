@@ -94,7 +94,7 @@ function Test-IsAdministrator {
 }
 
 if ($RequestAdmin -and -not (Test-IsAdministrator)) {
-    Write-Host "`n🛡️ Requesting Administrator Privileges..." -ForegroundColor Yellow
+    Write-Host "`n[ADMIN] Requesting Administrator Privileges..." -ForegroundColor Yellow
     Write-Host "Some STIG checks require elevated privileges for accurate assessment." -ForegroundColor Gray
     
     try {
@@ -662,18 +662,18 @@ try {
         $script:Config.reporting.export_formats 
     }
     
-    Write-Host "`n📄 Generating Reports..." -ForegroundColor Cyan
+    Write-Host "`n[REPORTS] Generating Reports..." -ForegroundColor Cyan
     
     foreach ($reportFormat in $reportFormats) {
         try {
             Write-Host "  Creating $reportFormat report..." -ForegroundColor Yellow
             $reportPath = Export-STIGReport -AssessmentData $assessmentResults -OutputPath $OutputPath -Format $reportFormat
-            Write-Host "  ✅ $reportFormat report: " -NoNewline -ForegroundColor Green
+            Write-Host "  [SUCCESS] $reportFormat report: " -NoNewline -ForegroundColor Green
             Write-Host $reportPath -ForegroundColor White
         }
         catch {
             Write-STIGLog "Failed to generate $reportFormat report: $($_.Exception.Message)" -Level ERROR
-            Write-Host "  ❌ Failed to generate $reportFormat report" -ForegroundColor Red
+            Write-Host "  [ERROR] Failed to generate $reportFormat report" -ForegroundColor Red
         }
     }
     
