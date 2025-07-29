@@ -30,15 +30,26 @@ cd windows-stig-hardening
 ```
 
 ### 2. Run Assessment
+
+**Option A: Quick Menu (Recommended)**
 ```powershell
-# Basic assessment (Coming Soon)
-.\scripts\Start-STIGAssessment.ps1
+# Launch the interactive assessment menu
+.\Launch-Assessment.ps1
+```
 
-# With custom output location
-.\scripts\Start-STIGAssessment.ps1 -OutputPath "C:\Reports"
+**Option B: Direct CLI Access**
+```powershell
+# Run quick assessment with interactive menu
+.\scripts\Quick-Assessment.ps1
 
-# Include custom rules
-.\scripts\Start-STIGAssessment.ps1 -IncludeCustomRules
+# Run advanced CLI tool directly
+.\scripts\Start-STIGAssessment.ps1 -RequestAdmin
+
+# Generate specific report format
+.\scripts\Start-STIGAssessment.ps1 -Format HTML -RequestAdmin
+
+# Filter critical rules only
+.\scripts\Start-STIGAssessment.ps1 -RuleFilter "CAT I" -Format ALL -RequestAdmin
 ```
 
 ### 3. View Results
@@ -49,26 +60,39 @@ Reports are generated in the `reports/` folder with timestamps. Open the HTML re
 ```
 windows-stig-hardening/
 ├── 📁 rules/
-│   ├── 📁 core/              # Official DISA STIG rule checks
-│   │   ├── WN11-SO-000001.ps1    # Example: Disable SMBv1
-│   │   └── ...
-│   └── 📁 custom/            # Custom organizational rules
-├── 📁 scripts/               # CLI entry points
-│   ├── Start-STIGAssessment.ps1  # Main assessment script
-│   ├── Export-STIGReport.ps1     # Report generation
-│   └── Test-Prerequisites.ps1    # System requirements check
-├── 📁 docs/                  # Complete documentation
-│   ├── SETUP_GUIDE.md           # Installation instructions
-│   ├── TESTING_EXPLAINED.md     # Development vs compliance testing
-│   ├── DEVELOPMENT_PLAN.md      # Technical roadmap
-│   └── STIG_RESOURCES.md        # Official DISA references
-├── 📁 config/                # Configuration files
-│   ├── settings.json             # Main tool settings
-│   └── rules.json               # Rule metadata
-├── 📁 reports/               # Generated assessment reports
-├── 📁 logs/                  # Execution and error logs
-├── 📁 tests/                 # Pester unit tests
-└── 📁 .github/               # GitHub metadata and Copilot instructions
+│   ├── 📁 core/                    # Official DISA STIG rule checks
+│   │   ├── WN11-SO-000001.ps1          # SMBv1 Protocol disabled
+│   │   ├── WN11-SO-000005.ps1          # User Account Control settings  
+│   │   ├── WN11-SO-000010.ps1          # Windows Firewall enabled
+│   │   ├── WN11-SO-000015.ps1          # Data Execution Prevention
+│   │   ├── WN11-SO-000020.ps1          # BitLocker Drive Encryption
+│   │   ├── WN11-SO-000025.ps1          # Telnet Client disabled
+│   │   ├── WN11-SO-000030.ps1          # Windows Defender enabled
+│   │   └── ...                         # Additional STIG rules
+│   └── 📁 custom/                  # Custom organizational rules
+├── 📁 scripts/                     # All executable scripts
+│   ├── Start-STIGAssessment.ps1        # Main CLI assessment engine
+│   ├── Quick-Assessment.ps1            # Interactive menu launcher
+│   ├── Run-STIG-Assessment-Admin.ps1   # Admin elevation helper
+│   ├── Run-STIG-Assessment-Admin.bat   # Batch admin launcher
+│   ├── Test-Admin.ps1                  # Admin privilege checker
+│   ├── Request-AdminRights.ps1         # UAC elevation tool
+│   └── ...                             # Additional utility scripts
+├── 📁 docs/                        # Complete documentation
+│   ├── SETUP_GUIDE.md                 # Installation instructions
+│   ├── TESTING_EXPLAINED.md           # Development vs compliance testing
+│   ├── DEVELOPMENT_PLAN.md            # Technical roadmap
+│   └── STIG_RESOURCES.md              # Official DISA references
+├── 📁 config/                      # Configuration files
+│   ├── settings.json                   # Main tool settings
+│   └── rules.json                     # Rule metadata
+├── 📁 reports/                     # Generated assessment reports
+├── 📁 logs/                        # Execution and error logs
+├── 📁 tests/                       # Pester unit tests
+│   └── test-syntax.ps1                # PowerShell syntax validation
+├── 📁 .github/                     # GitHub metadata and Copilot instructions
+├── Launch-Assessment.ps1           # Main entry point launcher
+└── README.md                       # This documentation
 ```
 
 ## 🔧 Configuration

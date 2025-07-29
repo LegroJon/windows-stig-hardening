@@ -7,7 +7,7 @@
     This is a user-friendly wrapper around Start-STIGAssessment.ps1
 #>
 
-Write-Host "🛡️ Windows 11 STIG Assessment Tool - Quick Launcher" -ForegroundColor Cyan
+Write-Host "[STIG] Windows 11 STIG Assessment Tool - Quick Launcher" -ForegroundColor Cyan
 Write-Host "=" * 60 -ForegroundColor Cyan
 Write-Host ""
 
@@ -15,32 +15,32 @@ Write-Host ""
 $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 
 if (-not $isAdmin) {
-    Write-Host "⚠️  Not running with Administrator privileges" -ForegroundColor Yellow
-    Write-Host "   Some checks may not work accurately without admin rights." -ForegroundColor Gray
+    Write-Host "[WARNING] Not running with Administrator privileges" -ForegroundColor Yellow
+    Write-Host "          Some checks may not work accurately without admin rights." -ForegroundColor Gray
     Write-Host ""
 }
 
 Write-Host "Choose your assessment options:" -ForegroundColor White
 Write-Host ""
-Write-Host "1. 📊 Generate HTML Report Only" -ForegroundColor Green
+Write-Host "1. [HTML] Generate HTML Report Only" -ForegroundColor Green
 Write-Host "   Professional web-based report for viewing and sharing"
 Write-Host ""
-Write-Host "2. 📈 Generate CSV Report Only" -ForegroundColor Green  
+Write-Host "2. [CSV] Generate CSV Report Only" -ForegroundColor Green  
 Write-Host "   Spreadsheet format for data analysis"
 Write-Host ""
-Write-Host "3. 🔧 Generate JSON Report Only" -ForegroundColor Green
+Write-Host "3. [JSON] Generate JSON Report Only" -ForegroundColor Green
 Write-Host "   Technical format for automation and integration"
 Write-Host ""
-Write-Host "4. 📋 Generate ALL Report Formats" -ForegroundColor Cyan
+Write-Host "4. [ALL] Generate ALL Report Formats" -ForegroundColor Cyan
 Write-Host "   HTML, CSV, and JSON reports"
 Write-Host ""
-Write-Host "5. ⚡ Quick Assessment (JSON only)" -ForegroundColor Yellow
+Write-Host "5. [QUICK] Quick Assessment (JSON only)" -ForegroundColor Yellow
 Write-Host "   Fast scan with basic JSON output"
 Write-Host ""
-Write-Host "6. 🎯 Filter Critical Rules Only (CAT I)" -ForegroundColor Red
+Write-Host "6. [CRITICAL] Filter Critical Rules Only (CAT I)" -ForegroundColor Red
 Write-Host "   Test only the most critical security requirements"
 Write-Host ""
-Write-Host "0. ❌ Exit" -ForegroundColor Gray
+Write-Host "0. [EXIT] Exit" -ForegroundColor Gray
 Write-Host ""
 
 do {
@@ -78,11 +78,11 @@ do {
             break
         }
         "0" {
-            Write-Host "👋 Goodbye!" -ForegroundColor Gray
+            Write-Host "[EXIT] Goodbye!" -ForegroundColor Gray
             exit 0
         }
         default {
-            Write-Host "❌ Invalid choice. Please enter 0-6." -ForegroundColor Red
+            Write-Host "[ERROR] Invalid choice. Please enter 0-6." -ForegroundColor Red
         }
     }
 } while ($choice -notin @("0","1","2","3","4","5","6"))
@@ -103,4 +103,4 @@ if ($openFolder -eq "y" -or $openFolder -eq "Y" -or $openFolder -eq "yes") {
 }
 
 Write-Host ""
-Write-Host "✅ Assessment complete!" -ForegroundColor Green
+Write-Host "[COMPLETE] Assessment complete!" -ForegroundColor Green
