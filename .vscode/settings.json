@@ -10,7 +10,7 @@
         "debug.overrideEngine": "copilot-chat",
         "debug.useNodeFetcher": true
     },
-    "workbench.colorTheme": "Default Dark+",
+    "workbench.colorTheme": "Abyss",
     "editor.wordWrap": "on",
     "files.autoSave": "afterDelay",
     "editor.suggestOnTriggerCharacters": true,
