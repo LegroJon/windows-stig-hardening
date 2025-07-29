@@ -44,7 +44,7 @@
         "overwrite_existing": false
     },
     "system": {
-        "require_admin": true,
+        "require_admin": false,
         "check_os_version": true,
         "minimum_powershell_version": "5.1"
     }
