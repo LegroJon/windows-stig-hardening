@@ -1,0 +1,25 @@
+﻿[2025-07-29 21:29:31] [INFO] Checking system requirements...
+[2025-07-29 21:29:31] [INFO] System requirements check passed
+[2025-07-29 21:29:31] [INFO] Discovering STIG rules in: ./rules/core
+[2025-07-29 21:29:31] [INFO] Found 12 rule files
+[2025-07-29 21:29:31] [INFO] Discovering STIG rules in: ./rules/custom
+[2025-07-29 21:29:31] [INFO] Found 0 rule files
+[2025-07-29 21:29:31] [INFO] Starting STIG rule execution...
+[2025-07-29 21:29:31] [INFO] Starting STIG assessment with 12 rules
+[2025-07-29 21:29:31] [INFO] Rule completed: WN11-AU-000010 - Error
+[2025-07-29 21:29:32] [INFO] Rule completed: WN11-SO-000001 - Error
+[2025-07-29 21:29:32] [INFO] Rule completed: WN11-SO-000005 - Error
+[2025-07-29 21:29:32] [INFO] Rule completed: WN11-SO-000010 - Error
+[2025-07-29 21:29:32] [INFO] Rule completed: WN11-SO-000015 - Non-Compliant
+[2025-07-29 21:29:42] [INFO] Rule completed: WN11-SO-000020 - Error
+[2025-07-29 21:29:42] [INFO] Rule completed: WN11-SO-000025 - Error
+[2025-07-29 21:29:42] [INFO] Rule completed: WN11-SO-000030 - Non-Compliant
+[2025-07-29 21:29:42] [INFO] Rule completed: WN11-SO-000035 - Error
+[2025-07-29 21:29:42] [INFO] Rule completed: WN11-SO-000040 - Compliant
+[2025-07-29 21:29:42] [INFO] Rule completed: WN11-SO-000045 - Non-Compliant
+[2025-07-29 21:29:42] [INFO] Rule completed: WN11-SO-000050 - Non-Compliant
+[2025-07-29 21:29:43] [INFO] Assessment completed: 1 compliant, 4 non-compliant, 7 errors
+[2025-07-29 21:29:43] [INFO] HTML report exported: .\reports\STIG-Assessment-20250729-212943.html
+[2025-07-29 21:29:43] [INFO] CSV report exported: .\reports\STIG-Assessment-20250729-212943.csv
+[2025-07-29 21:29:43] [INFO] JSON report exported: .\reports\STIG-Assessment-20250729-212943.json
+[2025-07-29 21:29:43] [INFO] Assessment completed successfully

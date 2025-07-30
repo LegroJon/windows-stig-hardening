@@ -1,27 +1,27 @@
-# 🛡️ Windows 11 STIG Assessment Tool
+# [STIG] Windows 11 STIG Assessment Tool
 
 A modular, CLI-based PowerShell tool for assessing DISA STIG compliance on Windows 11 systems. This tool focuses on **detection and assessment** rather than automatic remediation, providing detailed compliance reports with human-readable remediation guidance.
 
-## 🎯 Features
+## [INFO] Features
 
-- ✅ **Windows 11 STIG Compliance Assessment** - Comprehensive checks against DISA STIG requirements
-- 🔍 **Detection-Focused** - Scans for compliance without making system changes
-- 📊 **Multiple Report Formats** - HTML, PDF, CSV, and JSON output options
-- 🧩 **Modular Architecture** - Individual PowerShell scripts for each STIG rule
-- 🔧 **Extensible** - Support for custom organizational rules
-- 📋 **Detailed Remediation** - Clear, actionable guidance for each finding
-- 🚀 **CLI-Based** - Scriptable and automation-friendly
+- [SUCCESS] **Windows 11 STIG Compliance Assessment** - Comprehensive checks against DISA STIG requirements
+- [INFO] **Detection-Focused** - Scans for compliance without making system changes
+- [REPORT] **Multiple Report Formats** - HTML, PDF, CSV, and JSON output options
+- [INFO] **Modular Architecture** - Individual PowerShell scripts for each STIG rule
+- [INFO] **Extensible** - Support for custom organizational rules
+- [MANUAL] **Detailed Remediation** - Clear, actionable guidance for each finding
+- [RUNNING] **CLI-Based** - Scriptable and automation-friendly
 
-## 📋 Prerequisites
+## [ADMIN] Prerequisites
 
 - **Operating System**: Windows 11 (Enterprise, Professional, or Education)
 - **PowerShell**: Version 5.1 or higher (PowerShell 7+ recommended)
 - **Privileges**: Administrator rights required for system assessment
 - **Optional**: Pester module for running tests
 
-> 📖 **Complete Setup Instructions**: See [docs/SETUP_GUIDE.md](docs/SETUP_GUIDE.md) for detailed installation steps
+> [INFO] **Complete Setup Instructions**: See [docs/SETUP_GUIDE.md](docs/SETUP_GUIDE.md) for detailed installation steps
 
-## 🚀 Quick Start
+## [RUNNING] Quick Start
 
 ### 1. Clone the Repository
 ```powershell

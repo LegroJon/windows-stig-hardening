@@ -18,5 +18,16 @@
         "other": true,
         "comments": true,
         "strings": true
+    },
+    // CSS validation settings for template files
+    "css.validate": true,
+    "html.validate.styles": false,
+    // Suppress CSS linting in template files since they contain placeholders
+    "files.associations": {
+        "templates/*.html": "html"
+    },
+    // Disable CSS validation for template directory
+    "[html]": {
+        "html.validate.styles": false
     }
 }

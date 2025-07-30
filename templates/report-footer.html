@@ -1,0 +1,24 @@
+    </div>
+    
+    <script>
+        // Add interactive features
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate progress bar
+            const progressBar = document.querySelector('.progress-bar');
+            if (progressBar) {
+                progressBar.style.width = '0%';
+                setTimeout(() => {
+                    progressBar.style.width = '{{COMPLIANCE_PERCENTAGE}}%';
+                }, 500);
+            }
+            
+            // Add click handlers for rule items
+            document.querySelectorAll('.rule-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    this.style.transform = this.style.transform === 'translateX(10px)' ? 'translateX(5px)' : 'translateX(10px)';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

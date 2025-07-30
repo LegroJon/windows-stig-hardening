@@ -9,6 +9,7 @@
         "parallel_execution": true,
         "max_threads": 10,
         "timeout_seconds": 300,
+        "rule_timeout": 300,
         "include_custom_rules": true,
         "retry_attempts": 3,
         "retry_delay_seconds": 5

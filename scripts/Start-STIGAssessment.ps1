@@ -151,7 +151,55 @@ function Write-STIGLog {
         }
     }
     
-    # TODO: Implement file logging
+    # Implement file logging
+    if ($script:Config.logging -and $script:Config.output.logs_directory) {
+        try {
+            # Create logs directory if it doesn't exist
+            $logsDir = $script:Config.output.logs_directory
+            if (-not (Test-Path $logsDir)) {
+                New-Item -Path $logsDir -ItemType Directory -Force | Out-Null
+            }
+            
+            # Generate log file path with date
+            $logDate = Get-Date -Format "yyyy-MM-dd"
+            $logFile = Join-Path $logsDir "STIG-Assessment-$logDate.log"
+            
+            # Check log file size and rotate if necessary
+            if (Test-Path $logFile) {
+                $logFileInfo = Get-Item $logFile
+                $maxSizeMB = $script:Config.logging.max_log_size_mb
+                if ($logFileInfo.Length -gt ($maxSizeMB * 1MB)) {
+                    # Rotate log file
+                    $rotatedFile = Join-Path $logsDir "STIG-Assessment-$logDate-$(Get-Date -Format 'HHmmss').log"
+                    Move-Item $logFile $rotatedFile
+                    
+                    # Clean up old log files
+                    $maxFiles = $script:Config.logging.max_log_files
+                    $oldLogs = Get-ChildItem $logsDir -Filter "*.log" | Sort-Object LastWriteTime -Descending | Select-Object -Skip $maxFiles
+                    $oldLogs | Remove-Item -Force -ErrorAction SilentlyContinue
+                }
+            }
+            
+            # Write to log file (only if log level meets threshold)
+            $logLevels = @{
+                "ERROR" = 0
+                "WARN" = 1
+                "INFO" = 2
+                "DEBUG" = 3
+            }
+            $currentLogLevel = $script:Config.logging.level
+            $messageLogLevel = $Level
+            
+            if ($logLevels[$messageLogLevel] -le $logLevels[$currentLogLevel]) {
+                $logEntry | Out-File -FilePath $logFile -Append -Encoding UTF8
+            }
+        }
+        catch {
+            # If file logging fails, don't break the application
+            Write-Verbose "Failed to write to log file: $($_.Exception.Message)"
+        }
+    }
+    
     Write-Verbose $logEntry
 }
 
@@ -419,6 +467,256 @@ function Export-STIGReport {
 }
 
 function Generate-HTMLReport {
+    param([hashtable]$Data)
+    
+    Write-STIGLog "Generating HTML report..." -Level INFO
+    
+    # Check if external templates are available
+    $templateDir = Join-Path (Split-Path $script:ScriptDir -Parent) "templates"
+    $useExternalTemplates = Test-Path $templateDir
+    
+    if ($useExternalTemplates) {
+        Write-STIGLog "Using external HTML templates from: $templateDir" -Level INFO
+        return Generate-HTMLReportFromTemplates -Data $Data -TemplateDir $templateDir
+    } else {
+        Write-STIGLog "External templates not found, using embedded HTML" -Level INFO
+        return Generate-HTMLReportEmbedded -Data $Data
+    }
+}
+
+function Generate-HTMLReportFromTemplates {
+    param(
+        [hashtable]$Data,
+        [string]$TemplateDir
+    )
+    
+    try {
+        # Load basic template structure (this is a simplified version)
+        $headerPath = Join-Path $TemplateDir "report-header.html"
+        $footerPath = Join-Path $TemplateDir "report-footer.html"
+        
+        if ((Test-Path $headerPath) -and (Test-Path $footerPath)) {
+            $header = Get-Content $headerPath -Raw
+            $footer = Get-Content $footerPath -Raw
+            
+            # Generate body content using existing logic
+            $bodyContent = Generate-HTMLBodyContent -Data $Data
+            
+            # Combine header + body + footer
+            $html = $header + $bodyContent + $footer
+            
+            Write-STIGLog "HTML report generated using external templates" -Level INFO
+            return $html
+        } else {
+            Write-STIGLog "Required template files missing, falling back to embedded HTML" -Level WARN
+            return Generate-HTMLReportEmbedded -Data $Data
+        }
+    }
+    catch {
+        Write-STIGLog "Error loading templates: $($_.Exception.Message)" -Level ERROR
+        Write-STIGLog "Falling back to embedded HTML template" -Level WARN
+        return Generate-HTMLReportEmbedded -Data $Data
+    }
+}
+
+function Generate-HTMLBodyContent {
+    param([hashtable]$Data)
+    
+    $compliantRules = $Data.Results | Where-Object { $_.Status -eq "Compliant" }
+    $nonCompliantRules = $Data.Results | Where-Object { $_.Status -eq "Non-Compliant" }
+    $errorRules = $Data.Results | Where-Object { $_.Status -eq "Error" }
+    
+    # Calculate risk score based on non-compliance
+    $riskScore = [math]::Round(($nonCompliantRules.Count / $Data.Statistics.TotalRules) * 100, 1)
+    $riskLevel = switch ($riskScore) {
+        { $_ -le 10 } { @{text="LOW"; color="#27ae60"; bg="#d5f4e6"} }
+        { $_ -le 25 } { @{text="MODERATE"; color="#f39c12"; bg="#fef9e7"} }
+        { $_ -le 50 } { @{text="HIGH"; color="#e67e22"; bg="#fdf2e9"} }
+        default { @{text="CRITICAL"; color="#e74c3c"; bg="#fadbd8"} }
+    }
+    
+    return @"
+        <div class="header">
+            <h1>
+                <i class="fas fa-shield-alt"></i>
+                Windows 11 STIG Assessment Report
+            </h1>
+            <div class="header-grid">
+                <div class="header-info">
+                    <div class="info-item">
+                        <i class="fas fa-desktop"></i>
+                        <span><strong>Assessment:</strong> $($Data.Assessment.Name) v$($Data.Assessment.Version)</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-computer"></i>
+                        <span><strong>Computer:</strong> $($Data.Assessment.Computer)</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-user"></i>
+                        <span><strong>User:</strong> $($Data.Assessment.User)</span>
+                    </div>
+                </div>
+                <div class="header-info">
+                    <div class="info-item">
+                        <i class="fas fa-user-shield"></i>
+                        <span><strong>Admin:</strong> $($Data.Assessment.Administrator)</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-calendar"></i>
+                        <span><strong>Generated:</strong> $($Data.Assessment.Timestamp)</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-clock"></i>
+                        <span><strong>Duration:</strong> $([math]::Round($Data.Assessment.Duration, 2)) seconds</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="executive-summary">
+            <div class="summary-header">
+                <h2><i class="fas fa-chart-line"></i> Executive Summary</h2>
+                <div class="risk-badge" style="background: $($riskLevel.bg); color: $($riskLevel.color); border: 2px solid $($riskLevel.color);">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    RISK LEVEL: $($riskLevel.text)
+                </div>
+            </div>
+            
+            <div class="progress-container">
+                <div class="progress-bar" style="width: $($Data.Statistics.CompliancePercentage)%;">
+                    $($Data.Statistics.CompliancePercentage)% Compliant
+                </div>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon compliant">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-number compliant">$($Data.Statistics.Compliant)</div>
+                    <div class="stat-label">Compliant Rules</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon non-compliant">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div class="stat-number non-compliant">$($Data.Statistics.NonCompliant)</div>
+                    <div class="stat-label">Non-Compliant Rules</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon error">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <div class="stat-number error">$($Data.Statistics.Errors)</div>
+                    <div class="stat-label">Error Rules</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon compliance-rate">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                    <div class="stat-number compliance-rate">$($Data.Statistics.CompliancePercentage)%</div>
+                    <div class="stat-label">Compliance Rate</div>
+                </div>
+            </div>
+        </div>
+"@ + (Get-RuleSectionsHTML -CompliantRules $compliantRules -NonCompliantRules $nonCompliantRules -ErrorRules $errorRules)
+}
+
+function Get-RuleSectionsHTML {
+    param(
+        [array]$CompliantRules,
+        [array]$NonCompliantRules,
+        [array]$ErrorRules
+    )
+    
+    $sectionsHTML = ""
+    
+    # Non-compliant rules section
+    if ($NonCompliantRules.Count -gt 0) {
+        $sectionsHTML += @"
+        <div class="rules-section">
+            <div class="section-header header-non-compliant">
+                <i class="fas fa-times-circle"></i>
+                Non-Compliant Rules ($($NonCompliantRules.Count))
+            </div>
+            <div class="rules-container">
+"@
+        foreach ($rule in $NonCompliantRules) {
+            $sectionsHTML += @"
+                <div class="rule-item rule-non-compliant">
+                    <div class="rule-header">
+                        <div class="rule-id">$($rule.RuleID)</div>
+                        <div class="rule-status status-non-compliant">Non-Compliant</div>
+                    </div>
+                    <div class="evidence"><strong><i class="fas fa-search"></i> Evidence:</strong><br>$($rule.Evidence)</div>
+                    <div class="fix-text"><strong><i class="fas fa-tools"></i> Remediation:</strong><br>$($rule.FixText)</div>
+                </div>
+"@
+        }
+        $sectionsHTML += @"
+            </div>
+        </div>
+"@
+    }
+    
+    # Error rules section
+    if ($ErrorRules.Count -gt 0) {
+        $sectionsHTML += @"
+        <div class="rules-section">
+            <div class="section-header header-error">
+                <i class="fas fa-exclamation-circle"></i>
+                Rules with Errors ($($ErrorRules.Count))
+            </div>
+            <div class="rules-container">
+"@
+        foreach ($rule in $ErrorRules) {
+            $sectionsHTML += @"
+                <div class="rule-item rule-error">
+                    <div class="rule-header">
+                        <div class="rule-id">$($rule.RuleID)</div>
+                        <div class="rule-status status-error">Error</div>
+                    </div>
+                    <div class="evidence"><strong><i class="fas fa-bug"></i> Error Details:</strong><br>$($rule.ErrorMessage)</div>
+                </div>
+"@
+        }
+        $sectionsHTML += @"
+            </div>
+        </div>
+"@
+    }
+    
+    # Compliant rules section
+    if ($CompliantRules.Count -gt 0) {
+        $sectionsHTML += @"
+        <div class="rules-section">
+            <div class="section-header header-compliant">
+                <i class="fas fa-check-circle"></i>
+                Compliant Rules ($($CompliantRules.Count))
+            </div>
+            <div class="rules-container">
+"@
+        foreach ($rule in $CompliantRules) {
+            $sectionsHTML += @"
+                <div class="rule-item rule-compliant">
+                    <div class="rule-header">
+                        <div class="rule-id">$($rule.RuleID)</div>
+                        <div class="rule-status status-compliant">Compliant</div>
+                    </div>
+                    <div class="evidence"><strong><i class="fas fa-check"></i> Evidence:</strong><br>$($rule.Evidence)</div>
+                </div>
+"@
+        }
+        $sectionsHTML += @"
+            </div>
+        </div>
+"@
+    }
+    
+    return $sectionsHTML
+}
+
+function Generate-HTMLReportEmbedded {
     param([hashtable]$Data)
     
     $compliantRules = $Data.Results | Where-Object { $_.Status -eq "Compliant" }

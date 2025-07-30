@@ -1,0 +1,98 @@
+<!-- 
+    HTML Template for STIG Assessment Executive Summary
+    
+    NOTE: This file contains template placeholders like {{VARIABLE_NAME}}
+    These placeholders will be replaced by PowerShell at runtime.
+    CSS linting errors for these placeholders are expected and can be ignored.
+    
+    Template Variables:
+    - {{ASSESSMENT_NAME}}, {{ASSESSMENT_VERSION}}
+    - {{COMPUTER_NAME}}, {{USER_NAME}}, {{IS_ADMINISTRATOR}}
+    - {{TIMESTAMP}}, {{DURATION}}
+    - {{RISK_LEVEL}}, {{RISK_COLOR}}, {{RISK_BG}}
+    - {{COMPLIANCE_PERCENTAGE}}
+    - {{COMPLIANT_COUNT}}, {{NON_COMPLIANT_COUNT}}, {{ERROR_COUNT}}
+-->
+        <div class="header">
+            <h1>
+                <i class="fas fa-shield-alt"></i>
+                Windows 11 STIG Assessment Report
+            </h1>
+            <div class="header-grid">
+                <div class="header-info">
+                    <div class="info-item">
+                        <i class="fas fa-desktop"></i>
+                        <span><strong>Assessment:</strong> {{ASSESSMENT_NAME}} v{{ASSESSMENT_VERSION}}</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-computer"></i>
+                        <span><strong>Computer:</strong> {{COMPUTER_NAME}}</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-user"></i>
+                        <span><strong>User:</strong> {{USER_NAME}}</span>
+                    </div>
+                </div>
+                <div class="header-info">
+                    <div class="info-item">
+                        <i class="fas fa-user-shield"></i>
+                        <span><strong>Admin:</strong> {{IS_ADMINISTRATOR}}</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-calendar"></i>
+                        <span><strong>Generated:</strong> {{TIMESTAMP}}</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-clock"></i>
+                        <span><strong>Duration:</strong> {{DURATION}} seconds</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="executive-summary">
+            <div class="summary-header">
+                <h2><i class="fas fa-chart-line"></i> Executive Summary</h2>
+                <div class="risk-badge" style="background: {{RISK_BG}}; color: {{RISK_COLOR}}; border: 2px solid {{RISK_COLOR}};">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    RISK LEVEL: {{RISK_LEVEL}}
+                </div>
+            </div>
+            
+            <div class="progress-container">
+                <div class="progress-bar" style="width: {{COMPLIANCE_PERCENTAGE}}%;">
+                    {{COMPLIANCE_PERCENTAGE}}% Compliant
+                </div>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon compliant">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-number compliant">{{COMPLIANT_COUNT}}</div>
+                    <div class="stat-label">Compliant Rules</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon non-compliant">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div class="stat-number non-compliant">{{NON_COMPLIANT_COUNT}}</div>
+                    <div class="stat-label">Non-Compliant Rules</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon error">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <div class="stat-number error">{{ERROR_COUNT}}</div>
+                    <div class="stat-label">Error Rules</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon compliance-rate">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                    <div class="stat-number compliance-rate">{{COMPLIANCE_PERCENTAGE}}%</div>
+                    <div class="stat-label">Compliance Rate</div>
+                </div>
+            </div>
+        </div>
