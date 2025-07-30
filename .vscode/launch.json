@@ -103,6 +103,18 @@
             ],
             "cwd": "${workspaceFolder}",
             "createTemporaryIntegratedConsole": true
+        },
+        {
+            "name": "[STIG] Debug Test Demo",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}\\scripts\\Test-Debugging.ps1",
+            "args": [
+                "-Verbose",
+                "-TestType", "Basic"
+            ],
+            "cwd": "${workspaceFolder}",
+            "createTemporaryIntegratedConsole": true
         }
     ]
 }
