@@ -1,0 +1,108 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "[STIG] Debug Main Assessment",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}\\scripts\\Start-STIGAssessment.ps1",
+            "args": [
+                "-WhatIf",
+                "-Format", "JSON",
+                "-Verbose"
+            ],
+            "cwd": "${workspaceFolder}",
+            "createTemporaryIntegratedConsole": true
+        },
+        {
+            "name": "[STIG] Debug HTML Report Generation",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}\\scripts\\Start-STIGAssessment.ps1",
+            "args": [
+                "-WhatIf",
+                "-Format", "HTML",
+                "-Verbose"
+            ],
+            "cwd": "${workspaceFolder}",
+            "createTemporaryIntegratedConsole": true
+        },
+        {
+            "name": "[STIG] Debug Single Rule - WN11-SO-000010",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}\\rules\\core\\WN11-SO-000010.ps1",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "createTemporaryIntegratedConsole": true
+        },
+        {
+            "name": "[STIG] Debug Quick Assessment",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}\\scripts\\Quick-Assessment.ps1",
+            "args": [
+                "-Verbose"
+            ],
+            "cwd": "${workspaceFolder}",
+            "createTemporaryIntegratedConsole": true
+        },
+        {
+            "name": "[STIG] Debug PowerShell Syntax Validation",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}\\scripts\\Validate-PowerShellSyntax.ps1",
+            "args": [
+                "-Path", "${workspaceFolder}\\rules\\core",
+                "-Verbose"
+            ],
+            "cwd": "${workspaceFolder}",
+            "createTemporaryIntegratedConsole": true
+        },
+        {
+            "name": "[STIG] Debug Test Suite",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}\\scripts\\Run-Tests.ps1",
+            "args": [
+                "-TestType", "Unit",
+                "-Verbose"
+            ],
+            "cwd": "${workspaceFolder}",
+            "createTemporaryIntegratedConsole": true
+        },
+        {
+            "name": "[STIG] Debug Prerequisites Check",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}\\scripts\\Test-Prerequisites.ps1",
+            "args": [
+                "-Verbose"
+            ],
+            "cwd": "${workspaceFolder}",
+            "createTemporaryIntegratedConsole": true
+        },
+        {
+            "name": "[STIG] Debug Execution Policy",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}\\scripts\\Test-ExecutionPolicy.ps1",
+            "args": [
+                "-Verbose"
+            ],
+            "cwd": "${workspaceFolder}",
+            "createTemporaryIntegratedConsole": true
+        },
+        {
+            "name": "[STIG] Debug Admin Check",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}\\scripts\\Test-Admin.ps1",
+            "args": [
+                "-Verbose"
+            ],
+            "cwd": "${workspaceFolder}",
+            "createTemporaryIntegratedConsole": true
+        }
+    ]
+}
