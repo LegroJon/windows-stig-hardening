@@ -253,7 +253,7 @@ try {
             
             if ($ruleData) {
                 $ruleFile = Generate-STIGRuleScript -RuleData $ruleData -OutputDir $OutputDirectory
-                Write-Host "✅ Created: $($ruleData.RuleID) - $($ruleData.Title)" -ForegroundColor Green
+                Write-Host "[SUCCESS] Created: $($ruleData.RuleID) - $($ruleData.Title)" -ForegroundColor Green
                 $processedCount++
             }
         }
@@ -264,14 +264,14 @@ try {
     }
     
     # Summary
-    Write-Host "`n📊 Processing Summary" -ForegroundColor Cyan
+    Write-Host "`n[REPORT] Processing Summary" -ForegroundColor Cyan
     Write-Host "=" * 30 -ForegroundColor Cyan
     Write-Host "Total Rules Found: $($rules.Count)" -ForegroundColor White
     Write-Host "Successfully Processed: $processedCount" -ForegroundColor Green
     Write-Host "Errors: $errorCount" -ForegroundColor $(if ($errorCount -gt 0) { "Yellow" } else { "Green" })
     Write-Host "Output Directory: $OutputDirectory" -ForegroundColor White
     
-    Write-Host "`n🚀 Next Steps:" -ForegroundColor Yellow
+    Write-Host "`n[NEXT] Next Steps:" -ForegroundColor Yellow
     Write-Host "1. Review generated rule scripts in $OutputDirectory" -ForegroundColor Gray
     Write-Host "2. Implement specific check logic based on STIG requirements" -ForegroundColor Gray
     Write-Host "3. Test rules: .\scripts\Start-STIGAssessment.ps1" -ForegroundColor Gray

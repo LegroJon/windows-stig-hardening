@@ -81,7 +81,7 @@ foreach ($rule in $coreRules) {
         $result = & ".\scripts\New-STIGRule.ps1" -RuleID $rule.RuleID -RuleTitle $rule.Title -Category $rule.Category -CheckProcedure $rule.CheckProcedure -FixProcedure $rule.FixProcedure
         
         if ($LASTEXITCODE -eq 0) {
-            Write-Host "✅ Created: $($rule.RuleID)" -ForegroundColor Green
+            Write-Host "[SUCCESS] Created: $($rule.RuleID)" -ForegroundColor Green
             $createdCount++
         }
     }
@@ -90,10 +90,10 @@ foreach ($rule in $coreRules) {
     }
 }
 
-Write-Host "`n📊 Summary" -ForegroundColor Cyan
+Write-Host "`n[SUMMARY] Summary" -ForegroundColor Cyan
 Write-Host "Created $createdCount out of $($coreRules.Count) core STIG rules" -ForegroundColor Green
 
-Write-Host "`n🚀 Next Steps:" -ForegroundColor Yellow
+Write-Host "`n[NEXT] Next Steps:" -ForegroundColor Yellow
 Write-Host "1. Test the rules: .\scripts\Start-STIGAssessment.ps1" -ForegroundColor Gray
 Write-Host "2. Review and customize rule implementations" -ForegroundColor Gray
 Write-Host "3. Add more rules from your SCAP file manually" -ForegroundColor Gray

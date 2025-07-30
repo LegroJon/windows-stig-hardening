@@ -43,7 +43,7 @@ function Request-Elevation {
         [string[]]$ScriptArgs
     )
     
-    Write-Host "`n🛡️ Administrator Privileges Required" -ForegroundColor Yellow
+    Write-Host "`n[ADMIN] Administrator Privileges Required" -ForegroundColor Yellow
     Write-Host "=" * 50 -ForegroundColor Yellow
     Write-Host "This operation requires administrator privileges." -ForegroundColor White
     Write-Host "Windows will prompt for elevation (UAC)..." -ForegroundColor Gray
@@ -87,7 +87,7 @@ Write-Host "`nWindows 11 STIG Assessment Tool - Admin Rights Check" -ForegroundC
 Write-Host "=" * 60 -ForegroundColor Cyan
 
 if (Test-IsAdministrator) {
-    Write-Host "`n✅ Already running with administrator privileges!" -ForegroundColor Green
+    Write-Host "`n[SUCCESS] Already running with administrator privileges!" -ForegroundColor Green
     
     if ($ScriptToRun) {
         Write-Host "Executing: $ScriptToRun" -ForegroundColor White

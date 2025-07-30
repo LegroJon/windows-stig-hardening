@@ -1,6 +1,11 @@
-# 🛡️ Copilot Instructions for PowerShell STIG Assessment Tool
+# [STIG] Copilot Instructions for PowerShell STIG Assessment Tool
 
 You are assisting in building a modular, CLI-based PowerShell tool for assessing STIG compliance on Windows 11 systems. The tool does not automatically remediate settings, but instead scans for compliance and provides human-readable remediation instructions.
+
+## 🎉 PROJECT STATUS: UNICODE ISSUES RESOLVED ✅
+**Date Fixed**: July 29, 2025
+**Status**: All Unicode characters have been successfully replaced with ASCII equivalents
+**Impact**: PowerShell parsing errors eliminated, all scripts now execute correctly
 
 ## ✅ General Project Guidelines
 - Target: Windows 11 only (no support for Windows Server or Windows 10)
@@ -11,29 +16,51 @@ You are assisting in building a modular, CLI-based PowerShell tool for assessing
 - **Execution Environment**: Use PowerShell terminal for all script testing and execution
 - **Command Preference**: Use PowerShell commands over cmd.exe when possible
 
-## 🚨 PowerShell Coding Standards
+## [ENFORCED] PowerShell Coding Standards
 
-### Unicode Character Restrictions
-**CRITICAL**: Avoid Unicode characters (emojis, symbols) in PowerShell scripts as they cause parsing errors.
+### Unicode Character Policy - STRICTLY ENFORCED
+**STATUS**: ✅ **RESOLVED** - All Unicode characters have been replaced with ASCII equivalents
 
-**❌ Do NOT use:**
+**MANDATORY RULES** (Zero tolerance policy):
+- **NEVER** use Unicode characters (emojis, symbols) in PowerShell scripts
+- **ALWAYS** use ASCII text prefixes for logging and output
+- **VALIDATE** all scripts with `scripts\Validate-PowerShellSyntax.ps1` before committing
+
+**✅ APPROVED ASCII Prefixes** (Use these ONLY):
+```powershell
+[STIG]        # For tool branding and main messages
+[SUCCESS]     # For successful operations  
+[ERROR]       # For error conditions
+[WARNING]     # For warning messages
+[INFO]        # For informational messages
+[ADMIN]       # For admin privilege messages
+[SECURITY]    # For security-related messages
+[RUNNING]     # For operations in progress
+[REPORT]      # For reporting operations
+[SUMMARY]     # For summary information
+[NEXT]        # For next steps
+[MANUAL]      # For manual intervention required
+[RETRY]       # For retry operations
+[COMPLETE]    # For completion messages
+```
+
+**❌ BANNED Characters** (Will cause parsing errors):
 - Emojis: `🛡️`, `✅`, `❌`, `⚠️`, `📊`, `🚀`, `📁`, `🎯`, `⚡`, etc.
 - Unicode symbols: `→`, `←`, `↑`, `↓`, `▶`, `◀`, etc.
 
-**✅ Use instead:**
-- Text prefixes: `[STIG]`, `[WARNING]`, `[ERROR]`, `[SUCCESS]`, `[INFO]`
-- ASCII symbols: `->`, `<-`, `>>`, `<<`, `*`, `-`, `+`
-- Descriptive text: `"Running assessment..."`, `"Check complete"`
-
-**Example:**
+**✅ CORRECT Examples:**
 ```powershell
-# BAD - Unicode causes parsing errors
-Write-Host "🛡️ STIG Assessment Tool" -ForegroundColor Cyan
-Write-Host "✅ Check passed!" -ForegroundColor Green
+# Main tool branding
+Write-Host "[STIG] Windows 11 STIG Assessment Tool" -ForegroundColor Cyan
 
-# GOOD - ASCII-safe alternatives
-Write-Host "[STIG] Assessment Tool" -ForegroundColor Cyan
-Write-Host "[SUCCESS] Check passed!" -ForegroundColor Green
+# Success messages
+Write-Host "[SUCCESS] Assessment completed successfully" -ForegroundColor Green
+
+# Error handling
+Write-Host "[ERROR] Failed to access registry key" -ForegroundColor Red
+
+# Admin privilege warnings
+Write-Host "[ADMIN] Administrator privileges required" -ForegroundColor Yellow
 ```
 
 ### String Formatting Rules
@@ -41,6 +68,12 @@ Write-Host "[SUCCESS] Check passed!" -ForegroundColor Green
 - Escape special characters in strings
 - Use backticks for line continuation in long strings
 - Prefer single quotes for simple strings, double quotes when interpolation needed
+
+### Code Quality Requirements
+- **Mandatory**: Run `scripts\Validate-PowerShellSyntax.ps1` before any commit
+- **Required**: All scripts must pass syntax validation with zero Unicode issues
+- **Standard**: Use consistent ASCII prefixes for all user-facing messages
+- **Best Practice**: Include proper error handling in all functions
 
 ## 📂 Project Structure
 
@@ -95,6 +128,12 @@ function Test-DisableSMBv1 {
 📁 → [FOLDER] or [FILES]
 🎯 → [TARGET] or [CRITICAL]
 ⚡ → [QUICK] or [FAST]
+```
+
+**VALIDATION COMMAND**:
+```powershell
+# Run this before any code commit
+.\scripts\Validate-PowerShellSyntax.ps1
 ```
 
 ### Script Execution Issues

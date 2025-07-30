@@ -1,13 +1,13 @@
 # Simple Admin Test - Run this manually in an Admin PowerShell window
 
-Write-Host "🛡️ STIG Assessment - Admin Test" -ForegroundColor Cyan
+Write-Host "[STIG] STIG Assessment - Admin Test" -ForegroundColor Cyan
 Write-Host "=" * 40 -ForegroundColor Cyan
 
 # Test if we have admin rights
 $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 
 if ($isAdmin) {
-    Write-Host "✅ Running with Administrator privileges" -ForegroundColor Green
+    Write-Host "[SUCCESS] Running with Administrator privileges" -ForegroundColor Green
     Write-Host ""
     
     # Test one rule first
@@ -22,13 +22,13 @@ if ($isAdmin) {
     
     # If that worked, run full assessment
     if ($result.Status -ne "Error") {
-        Write-Host "✅ Individual rule test passed! Running full assessment..." -ForegroundColor Green
+        Write-Host "[SUCCESS] Individual rule test passed! Running full assessment..." -ForegroundColor Green
         .\scripts\Start-STIGAssessment.ps1
     } else {
-        Write-Host "❌ Individual rule test failed. Check error above." -ForegroundColor Red
+        Write-Host "[ERROR] Individual rule test failed. Check error above." -ForegroundColor Red
     }
 } else {
-    Write-Host "❌ Not running with Administrator privileges" -ForegroundColor Red
+    Write-Host "[ERROR] Not running with Administrator privileges" -ForegroundColor Red
     Write-Host ""
     Write-Host "Please:" -ForegroundColor Yellow
     Write-Host "1. Right-click Start Menu" -ForegroundColor White

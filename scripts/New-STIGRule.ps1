@@ -115,15 +115,15 @@ $ruleFilePath = Join-Path ".\rules\core" $ruleFileName
 # Write the rule script
 $ruleTemplate | Out-File -FilePath $ruleFilePath -Encoding UTF8
 
-Write-Host "✅ STIG Rule script created: $ruleFilePath" -ForegroundColor Green
-Write-Host "📝 Next steps:" -ForegroundColor Yellow
+Write-Host "[SUCCESS] STIG Rule script created: $ruleFilePath" -ForegroundColor Green
+Write-Host "[NEXT] Next steps:" -ForegroundColor Yellow
 Write-Host "   1. Edit the script to implement the actual check procedure" -ForegroundColor Gray
 Write-Host "   2. Replace the example registry check with STIG-specific logic" -ForegroundColor Gray
 Write-Host "   3. Test the rule: .\scripts\Start-STIGAssessment.ps1 -RuleFilter '$RuleID'" -ForegroundColor Gray
 Write-Host "   4. Update the FixText with actual remediation steps" -ForegroundColor Gray
 
 # Display template for reference
-Write-Host "`n📋 Rule Template Summary:" -ForegroundColor Cyan
+Write-Host "`n[SUMMARY] Rule Template Summary:" -ForegroundColor Cyan
 Write-Host "Rule ID: $RuleID" -ForegroundColor White
 Write-Host "Function: $functionName" -ForegroundColor White
 Write-Host "File: $ruleFilePath" -ForegroundColor White

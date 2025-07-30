@@ -32,20 +32,20 @@ param(
 
 # Define problematic Unicode characters and their replacements
 $UnicodeReplacements = @{
-    "🛡️" = "[STIG]"
-    "✅" = "[SUCCESS]"
-    "❌" = "[ERROR]"
-    "⚠️" = "[WARNING]"
-    "📊" = "[REPORT]"
-    "🚀" = "[RUNNING]"
-    "📁" = "[FOLDER]"
-    "🎯" = "[TARGET]"
-    "⚡" = "[QUICK]"
-    "📋" = "[ALL]"
-    "📈" = "[CSV]"
-    "🔧" = "[JSON]"
-    "👋" = "[EXIT]"
-    "📄" = "[FILE]"
+    "[UNICODE-SHIELD]" = "[STIG]"
+    "[UNICODE-CHECK]" = "[SUCCESS]"
+    "[UNICODE-X]" = "[ERROR]"
+    "[UNICODE-WARNING]" = "[WARNING]"
+    "[UNICODE-CHART]" = "[REPORT]"
+    "[UNICODE-ROCKET]" = "[RUNNING]"
+    "[UNICODE-FOLDER]" = "[FOLDER]"
+    "[UNICODE-TARGET]" = "[TARGET]"
+    "[UNICODE-LIGHTNING]" = "[QUICK]"
+    "[UNICODE-CLIPBOARD]" = "[ALL]"
+    "[UNICODE-GRAPH]" = "[CSV]"
+    "[UNICODE-WRENCH]" = "[JSON]"
+    "[UNICODE-WAVE]" = "[EXIT]"
+    "[UNICODE-PAGE]" = "[FILE]"
 }
 
 function Test-PowerShellSyntax {
