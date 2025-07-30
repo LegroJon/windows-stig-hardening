@@ -922,6 +922,18 @@ function Show-AssessmentResults {
 #region Main Execution
 
 try {
+    # Check execution policy first
+    Write-STIGLog "Checking PowerShell execution policy..." -Level INFO
+    $executionPolicyOK = & "$PSScriptRoot\Test-ExecutionPolicy.ps1" -Silent
+    if (-not $executionPolicyOK) {
+        Write-Host "[ERROR] PowerShell execution policy prevents script execution" -ForegroundColor Red
+        Write-Host "[SOLUTION] Run this command first:" -ForegroundColor Yellow
+        Write-Host "           Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force" -ForegroundColor White
+        Write-Host "[INFO] This temporarily allows scripts for the current PowerShell session only" -ForegroundColor Gray
+        exit 1
+    }
+    Write-STIGLog "Execution policy check passed" -Level INFO
+    
     # Load configuration
     $script:Config = Import-Configuration -Path $ConfigPath
     

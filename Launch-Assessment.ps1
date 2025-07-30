@@ -5,6 +5,7 @@
 .DESCRIPTION
     Simple launcher script that provides quick access to the STIG assessment tools.
     This script redirects to the appropriate tools in the scripts/ folder.
+    Automatically handles PowerShell execution policy issues.
 
 .NOTES
     Author: Jonathan Legro
@@ -14,6 +15,51 @@
     .\Launch-Assessment.ps1
     Launch the quick assessment menu
 #>
+
+# Function to check and handle execution policy
+function Test-ExecutionPolicy {
+    $currentPolicy = Get-ExecutionPolicy -Scope Process
+    $effectivePolicy = Get-ExecutionPolicy
+    
+    Write-Host "[STIG] Checking PowerShell execution policy..." -ForegroundColor Gray
+    
+    if ($effectivePolicy -eq "Restricted" -or $effectivePolicy -eq "AllSigned") {
+        Write-Host "[WARNING] PowerShell execution policy is restrictive: $effectivePolicy" -ForegroundColor Yellow
+        Write-Host "[INFO] This tool requires script execution to perform STIG assessments." -ForegroundColor Gray
+        
+        $response = Read-Host "[PROMPT] Temporarily allow script execution for this session? (y/N)"
+        if ($response -eq 'y' -or $response -eq 'Y' -or $response -eq 'yes') {
+            try {
+                Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
+                Write-Host "[SUCCESS] Execution policy temporarily set to Bypass for this session" -ForegroundColor Green
+                Write-Host "[INFO] This change only affects the current PowerShell session" -ForegroundColor Gray
+                return $true
+            }
+            catch {
+                Write-Host "[ERROR] Failed to modify execution policy: $($_.Exception.Message)" -ForegroundColor Red
+                Write-Host "[MANUAL] Please run: Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force" -ForegroundColor Yellow
+                return $false
+            }
+        }
+        else {
+            Write-Host "[INFO] Assessment cancelled. To run manually:" -ForegroundColor Gray
+            Write-Host "       Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force" -ForegroundColor White
+            Write-Host "       .\Launch-Assessment.ps1" -ForegroundColor White
+            return $false
+        }
+    }
+    else {
+        Write-Host "[SUCCESS] Execution policy allows script execution: $effectivePolicy" -ForegroundColor Green
+        return $true
+    }
+}
+
+# Check execution policy first
+if (-not (Test-ExecutionPolicy)) {
+    Write-Host "`n[EXIT] Execution policy check failed. Assessment tool cannot continue." -ForegroundColor Red
+    pause
+    exit 1
+}
 
 Write-Host "`n[STIG] Windows 11 STIG Assessment Tool" -ForegroundColor Cyan
 Write-Host "=" * 40 -ForegroundColor Cyan

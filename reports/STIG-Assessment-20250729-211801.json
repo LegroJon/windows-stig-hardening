@@ -1,0 +1,128 @@
+﻿{
+    "Statistics":  {
+                       "Compliant":  3,
+                       "NonCompliant":  9,
+                       "Errors":  0,
+                       "CompliancePercentage":  25,
+                       "TotalRules":  12
+                   },
+    "Results":  [
+                    {
+                        "FixText":  "Configure audit policy: auditpol /set /subcategory:\"Logon\" /success:enable /failure:enable",
+                        "RuleFile":  "C:\\Users\\jonat\\OneDrive\\Desktop\\E-Books\\Cyber\\windows-stig-hardening\\rules\\core\\WN11-AU-000010.ps1",
+                        "RuleID":  "WN11-AU-000010",
+                        "Evidence":  "Logon Events audit setting: Logon                                   Success and Failure (Required: Success and Failure)",
+                        "ExecutionTime":  99,
+                        "Status":  "Non-Compliant",
+                        "ErrorMessage":  ""
+                    },
+                    {
+                        "FixText":  "Run: Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol -NoRestart",
+                        "RuleFile":  "C:\\Users\\jonat\\OneDrive\\Desktop\\E-Books\\Cyber\\windows-stig-hardening\\rules\\core\\WN11-SO-000001.ps1",
+                        "RuleID":  "WN11-SO-000001",
+                        "Evidence":  "SMB1Protocol State: Disabled",
+                        "ExecutionTime":  474,
+                        "Status":  "Compliant",
+                        "ErrorMessage":  ""
+                    },
+                    {
+                        "FixText":  "Disable-WindowsOptionalFeature -Online -FeatureName MicrosoftWindowsPowerShellV2Root",
+                        "RuleFile":  "C:\\Users\\jonat\\OneDrive\\Desktop\\E-Books\\Cyber\\windows-stig-hardening\\rules\\core\\WN11-SO-000005.ps1",
+                        "RuleID":  "WN11-SO-000005",
+                        "Evidence":  "PowerShell 2.0 is not disabled (State: Enabled)",
+                        "ExecutionTime":  203,
+                        "Status":  "Non-Compliant",
+                        "ErrorMessage":  ""
+                    },
+                    {
+                        "FixText":  "",
+                        "RuleFile":  "C:\\Users\\jonat\\OneDrive\\Desktop\\E-Books\\Cyber\\windows-stig-hardening\\rules\\core\\WN11-SO-000010.ps1",
+                        "RuleID":  "WN11-SO-000010",
+                        "Evidence":  "Registry path does not exist: HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\PowerShell\\ScriptBlockLogging",
+                        "ExecutionTime":  17,
+                        "Status":  "Non-Compliant",
+                        "ErrorMessage":  ""
+                    },
+                    {
+                        "FixText":  "Configure DEP via System Properties \u003e Advanced \u003e Performance Settings \u003e Data Execution Prevention. Select \u0027Turn on DEP for essential Windows programs and services only\u0027 or \u0027Turn on DEP for all programs and services except those I select\u0027",
+                        "RuleFile":  "C:\\Users\\jonat\\OneDrive\\Desktop\\E-Books\\Cyber\\windows-stig-hardening\\rules\\core\\WN11-SO-000015.ps1",
+                        "RuleID":  "WN11-SO-000015",
+                        "Evidence":  "DEP is not properly configured: AlwaysOff (Disabled) (Policy: 2)",
+                        "ExecutionTime":  79,
+                        "Status":  "Non-Compliant",
+                        "ErrorMessage":  ""
+                    },
+                    {
+                        "FixText":  "Enable BitLocker: Control Panel \u003e System and Security \u003e BitLocker Drive Encryption \u003e Turn on BitLocker for the system drive. Follow the wizard to configure encryption and recovery options.",
+                        "RuleFile":  "C:\\Users\\jonat\\OneDrive\\Desktop\\E-Books\\Cyber\\windows-stig-hardening\\rules\\core\\WN11-SO-000020.ps1",
+                        "RuleID":  "WN11-SO-000020",
+                        "Evidence":  "BitLocker is not properly enabled (Protection: Off, Encryption: 0%, Status: FullyDecrypted)",
+                        "ExecutionTime":  360,
+                        "Status":  "Non-Compliant",
+                        "ErrorMessage":  ""
+                    },
+                    {
+                        "FixText":  "Disable-WindowsOptionalFeature -Online -FeatureName TelnetClient",
+                        "RuleFile":  "C:\\Users\\jonat\\OneDrive\\Desktop\\E-Books\\Cyber\\windows-stig-hardening\\rules\\core\\WN11-SO-000025.ps1",
+                        "RuleID":  "WN11-SO-000025",
+                        "Evidence":  "Telnet Client is disabled (State: Disabled)",
+                        "ExecutionTime":  225,
+                        "Status":  "Compliant",
+                        "ErrorMessage":  ""
+                    },
+                    {
+                        "FixText":  "Enable Windows Defender: Windows Security \u003e Virus \u0026 threat protection \u003e Virus \u0026 threat protection settings \u003e Real-time protection (Turn on)",
+                        "RuleFile":  "C:\\Users\\jonat\\OneDrive\\Desktop\\E-Books\\Cyber\\windows-stig-hardening\\rules\\core\\WN11-SO-000030.ps1",
+                        "RuleID":  "WN11-SO-000030",
+                        "Evidence":  "Windows Defender real-time protection is not fully enabled (RealTime: False, Antivirus: True, Antispyware: True)",
+                        "ExecutionTime":  351,
+                        "Status":  "Non-Compliant",
+                        "ErrorMessage":  ""
+                    },
+                    {
+                        "FixText":  "Set minimum password length to 14: secpol.msc \u003e Account Policies \u003e Password Policy \u003e Minimum password length = 14",
+                        "RuleFile":  "C:\\Users\\jonat\\OneDrive\\Desktop\\E-Books\\Cyber\\windows-stig-hardening\\rules\\core\\WN11-SO-000035.ps1",
+                        "RuleID":  "WN11-SO-000035",
+                        "Evidence":  "Current minimum password length: 0 characters (Required: 14+)",
+                        "ExecutionTime":  44,
+                        "Status":  "Non-Compliant",
+                        "ErrorMessage":  ""
+                    },
+                    {
+                        "FixText":  "N/A - Remote Desktop is already disabled",
+                        "RuleFile":  "C:\\Users\\jonat\\OneDrive\\Desktop\\E-Books\\Cyber\\windows-stig-hardening\\rules\\core\\WN11-SO-000040.ps1",
+                        "RuleID":  "WN11-SO-000040",
+                        "Evidence":  "Remote Desktop Services is disabled (fDenyTSConnections = 1)",
+                        "ExecutionTime":  14,
+                        "Status":  "Compliant",
+                        "ErrorMessage":  ""
+                    },
+                    {
+                        "FixText":  "Configure anonymous access restrictions: secpol.msc \u003e Local Policies \u003e Security Options \u003e Set \u0027Network access: Restrict anonymous access to Named Pipes and Shares\u0027 = Enabled, \u0027Network access: Do not allow anonymous enumeration of SAM accounts\u0027 = Enabled",
+                        "RuleFile":  "C:\\Users\\jonat\\OneDrive\\Desktop\\E-Books\\Cyber\\windows-stig-hardening\\rules\\core\\WN11-SO-000045.ps1",
+                        "RuleID":  "WN11-SO-000045",
+                        "Evidence":  "Issues found: RestrictAnonymous: 0 (Required: 1)",
+                        "ExecutionTime":  24,
+                        "Status":  "Non-Compliant",
+                        "ErrorMessage":  ""
+                    },
+                    {
+                        "FixText":  "Disable services: Stop-Service and Set-Service -StartupType Disabled",
+                        "RuleFile":  "C:\\Users\\jonat\\OneDrive\\Desktop\\E-Books\\Cyber\\windows-stig-hardening\\rules\\core\\WN11-SO-000050.ps1",
+                        "RuleID":  "WN11-SO-000050",
+                        "Evidence":  "Running/Auto services: Browser (Computer Browser service), SSDPSRV (SSDP Discovery Service); Properly disabled services: 3; Not installed services: 7",
+                        "ExecutionTime":  925,
+                        "Status":  "Non-Compliant",
+                        "ErrorMessage":  ""
+                    }
+                ],
+    "Assessment":  {
+                       "Version":  "1.0.0",
+                       "Name":  "Windows 11 STIG Assessment",
+                       "Timestamp":  "2025-07-29 21:18:01",
+                       "Duration":  2.9473553999999997,
+                       "Computer":  "SEBAS_TIAN",
+                       "User":  "Alexa",
+                       "Administrator":  true
+                   }
+}

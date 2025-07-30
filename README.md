@@ -31,13 +31,21 @@ cd windows-stig-hardening
 
 ### 2. Run Assessment
 
-**Option A: Quick Menu (Recommended)**
+**Option A: One-Click Launcher (Easiest)**
+```cmd
+# Double-click the batch file or run in Command Prompt
+Launch-Assessment.bat
+```
+*Automatically handles PowerShell execution policy*
+
+**Option B: PowerShell Interactive Menu**
 ```powershell
 # Launch the interactive assessment menu
 .\Launch-Assessment.ps1
 ```
+*Includes guided execution policy setup*
 
-**Option B: Direct CLI Access**
+**Option C: Direct CLI Access**
 ```powershell
 # Run quick assessment with interactive menu
 .\scripts\Quick-Assessment.ps1
@@ -52,7 +60,28 @@ cd windows-stig-hardening
 .\scripts\Start-STIGAssessment.ps1 -RuleFilter "CAT I" -Format ALL -RequestAdmin
 ```
 
-### 3. View Results
+### 3. Troubleshooting Execution Policy
+
+If you encounter "execution of scripts is disabled" errors:
+
+**Automatic Fix (Recommended):**
+```powershell
+# Run the launcher - it will guide you through the fix
+.\Launch-Assessment.ps1
+```
+
+**Manual Fix:**
+```powershell
+# Temporarily allow scripts for this session only
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
+
+# Then run the assessment
+.\Launch-Assessment.ps1
+```
+
+**Security Note:** These commands only affect the current PowerShell session and don't change system-wide security settings.
+
+### 4. View Results
 Reports are generated in the `reports/` folder with timestamps. Open the HTML report for an interactive view.
 
 ## 📂 Project Structure
