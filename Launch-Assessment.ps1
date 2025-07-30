@@ -18,6 +18,13 @@
 Write-Host "`n[STIG] Windows 11 STIG Assessment Tool" -ForegroundColor Cyan
 Write-Host "=" * 40 -ForegroundColor Cyan
 
+# Check admin privileges with VS Code awareness
+$adminResult = & ".\scripts\Test-AdminInVSCode.ps1"
+if ($adminResult -eq $null) {
+    # User chose to exit to get admin privileges
+    exit 0
+}
+
 Write-Host "`nChoose your launcher:" -ForegroundColor White
 Write-Host "1. Quick Assessment Menu (Recommended)" -ForegroundColor Green
 Write-Host "2. Advanced CLI Tool" -ForegroundColor Yellow
