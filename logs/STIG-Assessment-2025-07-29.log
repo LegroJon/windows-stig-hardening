@@ -23,3 +23,29 @@
 [2025-07-29 21:29:43] [INFO] CSV report exported: .\reports\STIG-Assessment-20250729-212943.csv
 [2025-07-29 21:29:43] [INFO] JSON report exported: .\reports\STIG-Assessment-20250729-212943.json
 [2025-07-29 21:29:43] [INFO] Assessment completed successfully
+[2025-07-29 21:56:15] [INFO] Checking system requirements...
+[2025-07-29 21:56:15] [INFO] System requirements check passed
+[2025-07-29 21:56:15] [INFO] Discovering STIG rules in: ./rules/core
+[2025-07-29 21:56:15] [INFO] Found 12 rule files
+[2025-07-29 21:56:15] [INFO] Discovering STIG rules in: ./rules/custom
+[2025-07-29 21:56:15] [INFO] Found 0 rule files
+[2025-07-29 21:56:15] [INFO] Starting STIG rule execution...
+[2025-07-29 21:56:15] [INFO] Starting STIG assessment with 12 rules
+[2025-07-29 21:56:15] [INFO] Rule completed: WN11-AU-000010 - Error
+[2025-07-29 21:56:15] [INFO] Rule completed: WN11-SO-000001 - Error
+[2025-07-29 21:56:15] [INFO] Rule completed: WN11-SO-000005 - Error
+[2025-07-29 21:56:15] [INFO] Rule completed: WN11-SO-000010 - Error
+[2025-07-29 21:56:15] [INFO] Rule completed: WN11-SO-000015 - Non-Compliant
+[2025-07-29 21:56:25] [INFO] Rule completed: WN11-SO-000020 - Error
+[2025-07-29 21:56:25] [INFO] Rule completed: WN11-SO-000025 - Error
+[2025-07-29 21:56:26] [INFO] Rule completed: WN11-SO-000030 - Non-Compliant
+[2025-07-29 21:56:26] [INFO] Rule completed: WN11-SO-000035 - Error
+[2025-07-29 21:56:26] [INFO] Rule completed: WN11-SO-000040 - Compliant
+[2025-07-29 21:56:26] [INFO] Rule completed: WN11-SO-000045 - Non-Compliant
+[2025-07-29 21:56:26] [INFO] Rule completed: WN11-SO-000050 - Non-Compliant
+[2025-07-29 21:56:26] [INFO] Assessment completed: 1 compliant, 4 non-compliant, 7 errors
+[2025-07-29 21:56:26] [INFO] Generating HTML report...
+[2025-07-29 21:56:26] [ERROR] Failed to generate HTML report: Cannot bind argument to parameter 'Path' because it is null.
+[2025-07-29 21:56:26] [INFO] CSV report exported: .\reports\STIG-Assessment-20250729-215626.csv
+[2025-07-29 21:56:26] [INFO] JSON report exported: .\reports\STIG-Assessment-20250729-215626.json
+[2025-07-29 21:56:26] [INFO] Assessment completed successfully
