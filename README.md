@@ -19,6 +19,8 @@ A modular, CLI-based PowerShell tool for assessing DISA STIG compliance on Windo
 - **Privileges**: Administrator rights required for system assessment
 - **Optional**: Pester module for running tests
 
+> 📖 **Complete Setup Instructions**: See [docs/SETUP_GUIDE.md](docs/SETUP_GUIDE.md) for detailed installation steps
+
 ## 🚀 Quick Start
 
 ### 1. Clone the Repository
@@ -28,15 +30,26 @@ cd windows-stig-hardening
 ```
 
 ### 2. Run Assessment
+
+**Option A: Quick Menu (Recommended)**
 ```powershell
-# Basic assessment (Coming Soon)
-.\scripts\Start-STIGAssessment.ps1
+# Launch the interactive assessment menu
+.\Launch-Assessment.ps1
+```
 
-# With custom output location
-.\scripts\Start-STIGAssessment.ps1 -OutputPath "C:\Reports"
+**Option B: Direct CLI Access**
+```powershell
+# Run quick assessment with interactive menu
+.\scripts\Quick-Assessment.ps1
 
-# Include custom rules
-.\scripts\Start-STIGAssessment.ps1 -IncludeCustomRules
+# Run advanced CLI tool directly
+.\scripts\Start-STIGAssessment.ps1 -RequestAdmin
+
+# Generate specific report format
+.\scripts\Start-STIGAssessment.ps1 -Format HTML -RequestAdmin
+
+# Filter critical rules only
+.\scripts\Start-STIGAssessment.ps1 -RuleFilter "CAT I" -Format ALL -RequestAdmin
 ```
 
 ### 3. View Results
@@ -47,21 +60,39 @@ Reports are generated in the `reports/` folder with timestamps. Open the HTML re
 ```
 windows-stig-hardening/
 ├── 📁 rules/
-│   ├── 📁 core/              # Official DISA STIG rule checks
-│   │   ├── WN11-SO-000001.ps1    # Example: Disable SMBv1
-│   │   └── ...
-│   └── 📁 custom/            # Custom organizational rules
-├── 📁 scripts/               # CLI entry points
-│   ├── Start-STIGAssessment.ps1  # Main assessment script
-│   ├── Export-STIGReport.ps1     # Report generation
-│   └── Test-Prerequisites.ps1    # System requirements check
-├── 📁 config/                # Configuration files
-│   ├── settings.json             # Main tool settings
-│   └── rules.json               # Rule metadata
-├── 📁 reports/               # Generated assessment reports
-├── 📁 logs/                  # Execution and error logs
-├── 📁 tests/                 # Pester unit tests
-└── 📁 .github/               # GitHub metadata and Copilot instructions
+│   ├── 📁 core/                    # Official DISA STIG rule checks
+│   │   ├── WN11-SO-000001.ps1          # SMBv1 Protocol disabled
+│   │   ├── WN11-SO-000005.ps1          # User Account Control settings  
+│   │   ├── WN11-SO-000010.ps1          # Windows Firewall enabled
+│   │   ├── WN11-SO-000015.ps1          # Data Execution Prevention
+│   │   ├── WN11-SO-000020.ps1          # BitLocker Drive Encryption
+│   │   ├── WN11-SO-000025.ps1          # Telnet Client disabled
+│   │   ├── WN11-SO-000030.ps1          # Windows Defender enabled
+│   │   └── ...                         # Additional STIG rules
+│   └── 📁 custom/                  # Custom organizational rules
+├── 📁 scripts/                     # All executable scripts
+│   ├── Start-STIGAssessment.ps1        # Main CLI assessment engine
+│   ├── Quick-Assessment.ps1            # Interactive menu launcher
+│   ├── Run-STIG-Assessment-Admin.ps1   # Admin elevation helper
+│   ├── Run-STIG-Assessment-Admin.bat   # Batch admin launcher
+│   ├── Test-Admin.ps1                  # Admin privilege checker
+│   ├── Request-AdminRights.ps1         # UAC elevation tool
+│   └── ...                             # Additional utility scripts
+├── 📁 docs/                        # Complete documentation
+│   ├── SETUP_GUIDE.md                 # Installation instructions
+│   ├── TESTING_EXPLAINED.md           # Development vs compliance testing
+│   ├── DEVELOPMENT_PLAN.md            # Technical roadmap
+│   └── STIG_RESOURCES.md              # Official DISA references
+├── 📁 config/                      # Configuration files
+│   ├── settings.json                   # Main tool settings
+│   └── rules.json                     # Rule metadata
+├── 📁 reports/                     # Generated assessment reports
+├── 📁 logs/                        # Execution and error logs
+├── 📁 tests/                       # Pester unit tests
+│   └── test-syntax.ps1                # PowerShell syntax validation
+├── 📁 .github/                     # GitHub metadata and Copilot instructions
+├── Launch-Assessment.ps1           # Main entry point launcher
+└── README.md                       # This documentation
 ```
 
 ## 🔧 Configuration
@@ -100,18 +131,19 @@ function Test-[RuleName] {
 
 ## 🧪 Testing
 
-Run the test suite to validate rule logic:
+The tool has two separate testing systems:
+- **Development Tests** (Pester): Validates code logic during development
+- **STIG Assessment**: Tests real Windows security compliance
 
 ```powershell
-# Install Pester (if not already installed)
-Install-Module -Name Pester -Force -SkipPublisherCheck
+# Run development tests (Pester)
+.\scripts\Run-Tests.ps1
 
-# Run all tests
-Invoke-Pester
-
-# Run specific test file
-Invoke-Pester -Path ".\tests\Rules.Tests.ps1"
+# Run STIG compliance assessment
+.\scripts\Start-STIGAssessment.ps1 -RequestAdmin
 ```
+
+> 📖 **Understanding the Difference**: See [docs/TESTING_EXPLAINED.md](docs/TESTING_EXPLAINED.md) for complete details
 
 ## 🤝 Contributing
 
@@ -129,7 +161,16 @@ Invoke-Pester -Path ".\tests\Rules.Tests.ps1"
 4. Add corresponding Pester tests
 5. Update rule metadata in `config/rules.json`
 
-## 📚 Resources
+## 📚 Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [docs/SETUP_GUIDE.md](docs/SETUP_GUIDE.md) | Complete installation and setup instructions |
+| [docs/TESTING_EXPLAINED.md](docs/TESTING_EXPLAINED.md) | Development tests vs STIG compliance assessment |
+| [docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md) | Technical roadmap and architecture |
+| [docs/STIG_RESOURCES.md](docs/STIG_RESOURCES.md) | Official DISA STIG references |
+
+## 🔗 External Resources
 
 - [DISA STIG Library](https://public.cyber.mil/stigs/)
 - [Windows 11 STIG Documentation](https://public.cyber.mil/stigs/downloads/)
@@ -142,13 +183,19 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🚧 Development Status
 
-**Current Phase**: Initial Development
+**Current Phase**: Enhanced Reporting Complete ✅
 - ✅ Project structure established
 - ✅ Configuration framework ready
-- ✅ Example rule implemented
-- 🔄 Core CLI scripts (In Progress)
-- 🔄 Test framework (Planned)
-- 🔄 Additional STIG rules (Planned)
+- ✅ **12 STIG rules implemented** (71% increase!)
+- ✅ **Core CLI scripts functional** (Start-STIGAssessment.ps1, Quick-Assessment.ps1)
+- ✅ **Multi-format reporting** (HTML, CSV, JSON)
+- ✅ **Enhanced HTML Dashboard** (Executive styling, risk assessment, progress bars)
+- ✅ **Performance timing** (Assessment duration tracking)
+- ✅ **Testing framework complete** (Pester integration)
+- ✅ **Real compliance assessment** (25% baseline established)
+- ✅ **Admin privilege handling** (Multiple UAC approaches)
+- 🔄 Performance optimization (Next Phase)
+- 📋 Additional STIG rule expansion (Ongoing)
 
 ## 📞 Support
 

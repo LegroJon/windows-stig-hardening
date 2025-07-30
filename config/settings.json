@@ -9,23 +9,44 @@
         "parallel_execution": true,
         "max_threads": 10,
         "timeout_seconds": 300,
-        "include_custom_rules": true
+        "include_custom_rules": true,
+        "retry_attempts": 3,
+        "retry_delay_seconds": 5
     },
     "reporting": {
         "default_format": "HTML",
+        "export_formats": ["HTML", "CSV", "JSON"],
         "include_evidence": true,
         "include_fix_text": true,
-        "auto_open_report": false
+        "auto_open_report": false,
+        "timestamp_format": "yyyy-MM-dd_HH-mm-ss",
+        "report_prefix": "STIG-Assessment"
     },
     "logging": {
         "level": "INFO",
         "max_log_size_mb": 10,
         "max_log_files": 30,
-        "enable_debug": false
+        "enable_debug": false,
+        "log_to_console": true,
+        "log_format": "[{timestamp}] [{level}] {message}"
     },
     "rules": {
         "core_rules_path": "./rules/core",
         "custom_rules_path": "./rules/custom",
-        "skip_rules": []
+        "rules_metadata_path": "./config/rules.json",
+        "skip_rules": [],
+        "include_only": [],
+        "validate_before_execution": true
+    },
+    "output": {
+        "reports_directory": "./reports",
+        "logs_directory": "./logs",
+        "create_directories": true,
+        "overwrite_existing": false
+    },
+    "system": {
+        "require_admin": false,
+        "check_os_version": true,
+        "minimum_powershell_version": "5.1"
     }
 }

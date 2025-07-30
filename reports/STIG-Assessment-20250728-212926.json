@@ -1,0 +1,28 @@
+﻿{
+    "Statistics":  {
+                       "Compliant":  0,
+                       "NonCompliant":  0,
+                       "Errors":  1,
+                       "CompliancePercentage":  0,
+                       "TotalRules":  1
+                   },
+    "Results":  [
+                    {
+                        "FixText":  "",
+                        "RuleFile":  "C:\\Users\\jonat\\OneDrive\\Desktop\\E-Books\\Cyber\\windows-stig-hardening\\rules\\core\\WN11-SO-000001.ps1",
+                        "RuleID":  "WN11-SO-000001",
+                        "Evidence":  "",
+                        "ExecutionTime":  210,
+                        "Status":  "Error",
+                        "ErrorMessage":  "No result returned from Test-DisableSMBv1"
+                    }
+                ],
+    "Assessment":  {
+                       "Version":  "1.0.0",
+                       "Name":  "Windows 11 STIG Assessment",
+                       "Timestamp":  "2025-07-28 21:29:26",
+                       "Computer":  "SEBAS_TIAN",
+                       "User":  "jonat",
+                       "Administrator":  false
+                   }
+}
