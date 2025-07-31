@@ -1,0 +1,15 @@
+{
+  "servers": {
+    "hf-mcp-server": {
+      "url": "https://huggingface.co/mcp",
+      "headers": {
+        "Authorization": "Bearer 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"
+      }
+    },
+    "local-stig-mcp": {
+      "command": "node",
+      "args": ["mcp-server/mcp-server.js"],
+      "cwd": "c:\\Users\\jonat\\OneDrive\\Desktop\\E-Books\\Cyber\\windows-stig-hardening"
+    }
+  }
+}

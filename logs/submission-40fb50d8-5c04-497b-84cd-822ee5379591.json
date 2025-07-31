@@ -1,0 +1,23 @@
+{
+  "id": "40fb50d8-5c04-497b-84cd-822ee5379591",
+  "timestamp": "2025-07-30T21:09:38Z",
+  "report_type": "test-assessment",
+  "system_info": {
+    "domain": null,
+    "os_version": "10.0.26100",
+    "hostname": "SEBAS_TIAN"
+  },
+  "results": [
+    {
+      "Status": "Compliant",
+      "Evidence": "SMBv1 is disabled",
+      "RuleID": "WN11-SO-000001",
+      "NISTMappings": [
+        "SC-8",
+        "SC-13"
+      ],
+      "FixText": "N/A - Already compliant"
+    }
+  ],
+  "processed_at": "2025-07-31T01:09:39.111Z"
+}

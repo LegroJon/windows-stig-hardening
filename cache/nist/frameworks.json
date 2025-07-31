@@ -1,0 +1,25 @@
+{
+  "timestamp": "2025-07-31T01:09:38.900Z",
+  "data": {
+    "frameworks": [
+      {
+        "id": "nist-800-53",
+        "name": "NIST SP 800-53 Security and Privacy Controls",
+        "version": "Rev 5",
+        "description": "Security and privacy controls for federal information systems"
+      },
+      {
+        "id": "nist-csf",
+        "name": "NIST Cybersecurity Framework",
+        "version": "2.0",
+        "description": "Framework for improving cybersecurity posture"
+      },
+      {
+        "id": "nist-800-171",
+        "name": "NIST SP 800-171 Protecting CUI",
+        "version": "Rev 2",
+        "description": "Protecting Controlled Unclassified Information"
+      }
+    ]
+  }
+}

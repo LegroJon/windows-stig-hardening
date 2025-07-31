@@ -1,0 +1,20 @@
+{
+  "timestamp": "2025-07-31T01:09:38.912Z",
+  "data": {
+    "framework": "nist-800-53",
+    "controls": [
+      {
+        "id": "AC-2",
+        "name": "Account Management",
+        "family": "Access Control",
+        "description": "Manage information system accounts"
+      },
+      {
+        "id": "SI-3",
+        "name": "Malicious Code Protection",
+        "family": "System and Information Integrity",
+        "description": "Implement malicious code protection"
+      }
+    ]
+  }
+}
