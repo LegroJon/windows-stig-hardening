@@ -1,0 +1,166 @@
+{
+    "nist_stig_mappings": {
+        "metadata": {
+            "version": "1.0.0",
+            "last_updated": "2025-01-29",
+            "source": "NIST NCP Repository",
+            "description": "STIG to NIST Framework Mappings for Windows 11 Assessment Tool"
+        },
+        "framework_mappings": {
+            "NIST-800-53": {
+                "name": "NIST SP 800-53 Security and Privacy Controls",
+                "version": "Rev 5",
+                "url": "https://ncp.nist.gov/repository/framework/800-53",
+                "stig_mapping_type": "security_controls",
+                "control_families": [
+                    "AC", "AT", "AU", "CA", "CM", "CP", "IA", "IR", 
+                    "MA", "MP", "PE", "PL", "PS", "RA", "SA", "SC", 
+                    "SI", "SR", "PM"
+                ]
+            },
+            "NIST-CSF": {
+                "name": "NIST Cybersecurity Framework",
+                "version": "2.0",
+                "url": "https://ncp.nist.gov/repository/framework/cybersecurity-framework",
+                "stig_mapping_type": "cybersecurity_functions",
+                "functions": [
+                    "GOVERN", "IDENTIFY", "PROTECT", "DETECT", "RESPOND", "RECOVER"
+                ]
+            },
+            "NIST-800-171": {
+                "name": "NIST SP 800-171 Protecting CUI in Nonfederal Systems",
+                "version": "Rev 2",
+                "url": "https://ncp.nist.gov/repository/framework/800-171",
+                "stig_mapping_type": "cui_protection",
+                "control_families": [
+                    "3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7", 
+                    "3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14"
+                ]
+            },
+            "NIST-Privacy-Framework": {
+                "name": "NIST Privacy Framework",
+                "version": "1.0",
+                "url": "https://ncp.nist.gov/repository/framework/privacy-framework",
+                "stig_mapping_type": "privacy_functions",
+                "functions": [
+                    "IDENTIFY-P", "GOVERN-P", "CONTROL-P", "COMMUNICATE-P", "PROTECT-P"
+                ]
+            }
+        },
+        "windows11_stig_rules": {
+            "WN11-SO-000001": {
+                "title": "SMBv1 Protocol Disabled",
+                "nist_800_53": ["SC-8", "SC-13"],
+                "nist_csf": ["PROTECT.DS-2", "PROTECT.DS-3"],
+                "nist_800_171": ["3.13.8", "3.13.11"],
+                "privacy_framework": []
+            },
+            "WN11-SO-000002": {
+                "title": "Windows Defender Real-time Protection",
+                "nist_800_53": ["SI-3", "SI-8"],
+                "nist_csf": ["DETECT.CM-4", "PROTECT.AO-1"],
+                "nist_800_171": ["3.14.1", "3.14.2"],
+                "privacy_framework": []
+            },
+            "WN11-AC-000001": {
+                "title": "Local Account Token Filter Policy",
+                "nist_800_53": ["AC-2", "AC-6"],
+                "nist_csf": ["PROTECT.AC-1", "PROTECT.AC-4"],
+                "nist_800_171": ["3.1.1", "3.1.2"],
+                "privacy_framework": []
+            },
+            "WN11-AC-000002": {
+                "title": "Administrator Account Renamed",
+                "nist_800_53": ["AC-2", "IA-4"],
+                "nist_csf": ["PROTECT.AC-1", "IDENTIFY.AM-5"],
+                "nist_800_171": ["3.1.1", "3.5.1"],
+                "privacy_framework": []
+            },
+            "WN11-AU-000001": {
+                "title": "Audit Policy Configuration",
+                "nist_800_53": ["AU-2", "AU-3", "AU-12"],
+                "nist_csf": ["DETECT.AE-2", "DETECT.AE-3"],
+                "nist_800_171": ["3.3.1", "3.3.2"],
+                "privacy_framework": []
+            },
+            "WN11-CC-000001": {
+                "title": "Windows Firewall Enabled",
+                "nist_800_53": ["SC-7", "CA-3"],
+                "nist_csf": ["PROTECT.AC-4", "PROTECT.AC-5"],
+                "nist_800_171": ["3.1.3", "3.13.1"],
+                "privacy_framework": []
+            },
+            "WN11-MS-000001": {
+                "title": "User Account Control Configured",
+                "nist_800_53": ["AC-6", "AC-7"],
+                "nist_csf": ["PROTECT.AC-4", "PROTECT.AC-6"],
+                "nist_800_171": ["3.1.7", "3.1.8"],
+                "privacy_framework": []
+            }
+        },
+        "compliance_profiles": {
+            "federal_moderate": {
+                "name": "Federal Moderate Baseline",
+                "required_frameworks": ["NIST-800-53", "NIST-CSF"],
+                "control_baseline": "moderate",
+                "privacy_requirements": true,
+                "applicable_rules": "ALL"
+            },
+            "federal_high": {
+                "name": "Federal High Baseline", 
+                "required_frameworks": ["NIST-800-53", "NIST-CSF", "NIST-Privacy-Framework"],
+                "control_baseline": "high",
+                "privacy_requirements": true,
+                "applicable_rules": "ALL"
+            },
+            "commercial_standard": {
+                "name": "Commercial Standard Baseline",
+                "required_frameworks": ["NIST-CSF"],
+                "control_baseline": "low",
+                "privacy_requirements": false,
+                "applicable_rules": "CORE_ONLY"
+            },
+            "cui_protection": {
+                "name": "CUI Protection Baseline",
+                "required_frameworks": ["NIST-800-171", "NIST-CSF"],
+                "control_baseline": "moderate",
+                "privacy_requirements": true,
+                "applicable_rules": "CUI_FOCUSED"
+            }
+        },
+        "assessment_templates": {
+            "nist_800_53_assessment": {
+                "template_name": "NIST 800-53 Compliance Assessment",
+                "framework": "NIST-800-53",
+                "output_format": "nist-json",
+                "include_mappings": true,
+                "control_evidence": true,
+                "remediation_guidance": true
+            },
+            "csf_maturity_assessment": {
+                "template_name": "Cybersecurity Framework Maturity Assessment",
+                "framework": "NIST-CSF",
+                "output_format": "csv",
+                "include_mappings": true,
+                "maturity_scoring": true,
+                "benchmark_comparison": true
+            },
+            "cui_readiness_assessment": {
+                "template_name": "CUI Protection Readiness Assessment",
+                "framework": "NIST-800-171",
+                "output_format": "pdf",
+                "include_mappings": true,
+                "gap_analysis": true,
+                "implementation_roadmap": true
+            }
+        },
+        "api_endpoints": {
+            "nist_ncp_base": "https://ncp.nist.gov/repository/api/v1",
+            "control_lookup": "/frameworks/{framework}/controls/{control_id}",
+            "mapping_service": "/mappings/{source_framework}/{target_framework}",
+            "profile_baseline": "/profiles/{profile}/baseline",
+            "compliance_check": "/compliance/check",
+            "assessment_templates": "/templates/{template_type}"
+        }
+    }
+}

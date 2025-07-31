@@ -1,0 +1,76 @@
+# Windows 11 STIG Assessment Tool - Git Ignore File
+
+# Logs and reports
+logs/
+reports/
+*.log
+
+# Cache directories
+cache/
+*.cache
+
+# PowerShell temporary files
+*.tmp
+*.temp
+
+# Configuration files with sensitive data
+config/*-local.json
+config/*-prod.json
+*.credentials.json
+
+# MCP Server files
+mcp-server/node_modules/
+*.pid
+
+# Hugging Face integration
+huggingface-cache/
+*.hf-token
+ai-models/
+model-cache/
+
+# Test results
+tests/results/
+TestResults.xml
+
+# IDE and editor files
+.vscode/settings.json.user
+*.swp
+*.swo
+*~
+
+# OS generated files
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# Compiled scripts (if any)
+*.exe
+*.dll
+*.pdb
+
+# Package manager files
+node_modules/
+packages/
+
+# Environment specific
+.env
+.env.local
+.env.production
+
+# NIST framework cache
+cache/nist/*.json
+cache/frameworks/
+
+# Enterprise integration credentials
+enterprise-config.json
+siem-credentials.json
+grc-config.json
+
+# Report archives
+archive/
+historical-reports/
