@@ -49,5 +49,64 @@
         "require_admin": false,
         "check_os_version": true,
         "minimum_powershell_version": "5.1"
+    },
+    "mcp_integration": {
+        "enabled": false,
+        "server_url": "localhost:8080",
+        "timeout_seconds": 30,
+        "retry_attempts": 3,
+        "secure_mode": true,
+        "auto_start_server": false
+    },
+    "nist_ncp_integration": {
+        "enabled": false,
+        "repository_url": "https://ncp.nist.gov/repository",
+        "api_endpoint": "https://ncp.nist.gov/repository/api/v1",
+        "auto_update": true,
+        "update_frequency": "weekly",
+        "cache_duration_hours": 24,
+        "framework_mappings": {
+            "stig": "NIST-800-53",
+            "cis": "NIST-CSF",
+            "windows11": "NIST-800-171"
+        },
+        "preferred_profiles": [
+            "cybersecurity-framework",
+            "privacy-framework", 
+            "risk-management-framework"
+        ]
+    },
+    "enterprise_integration": {
+        "enabled": false,
+        "target_systems": [
+            {
+                "name": "NIST Compliance Dashboard",
+                "endpoint": "nist-compliance",
+                "format": "nist-json",
+                "authentication": "oauth2"
+            },
+            {
+                "name": "GRC Platform",
+                "endpoint": "grc-reports",
+                "format": "json",
+                "authentication": "api-key"
+            },
+            {
+                "name": "SIEM Integration",
+                "endpoint": "security-events",
+                "format": "syslog",
+                "authentication": "certificate"
+            }
+        ],
+        "reporting_schedule": "daily",
+        "include_nist_mappings": true
+    },
+    "organization_baseline": {
+        "enabled": false,
+        "baseline_type": "NIST-Standard",
+        "override_defaults": true,
+        "custom_policies": [],
+        "nist_profile_compliance": true,
+        "risk_tolerance": "moderate"
     }
 }
