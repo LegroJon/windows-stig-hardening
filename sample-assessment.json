@@ -1,0 +1,43 @@
+{
+    "assessment": {
+        "name": "Sample STIG Assessment",
+        "timestamp": "2025-07-31T01:15:00Z",
+        "system": "TEST-WORKSTATION"
+    },
+    "results": [
+        {
+            "RuleID": "WN11-SO-000001",
+            "Title": "SMBv1 Protocol Disabled",
+            "Status": "Compliant",
+            "Evidence": "SMBv1 feature is disabled",
+            "FixText": "N/A - Already compliant"
+        },
+        {
+            "RuleID": "WN11-AC-000001", 
+            "Title": "Local Account Token Filter Policy",
+            "Status": "Non-Compliant",
+            "Evidence": "Registry value not configured",
+            "FixText": "Set LocalAccountTokenFilterPolicy to 0"
+        },
+        {
+            "RuleID": "WN11-AU-000001",
+            "Title": "Audit Policy Configuration", 
+            "Status": "Non-Compliant",
+            "Evidence": "Audit policies not properly configured",
+            "FixText": "Configure audit policies per STIG requirements"
+        },
+        {
+            "RuleID": "WN11-CC-000001",
+            "Title": "Windows Firewall Enabled",
+            "Status": "Compliant", 
+            "Evidence": "Windows Firewall is active",
+            "FixText": "N/A - Already compliant"
+        }
+    ],
+    "summary": {
+        "total_rules": 4,
+        "compliant": 2,
+        "non_compliant": 2,
+        "compliance_rate": 50.0
+    }
+}
