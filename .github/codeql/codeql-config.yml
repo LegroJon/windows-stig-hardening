@@ -1,0 +1,15 @@
+query-filters:
+  - exclude:
+      id: js/unused-local-variable
+  - exclude:
+      id: js/missing-token-validation
+
+paths-ignore:
+  - "logs/"
+  - "reports/"
+  - "node_modules/"
+  - "*.log"
+
+paths:
+  - "mcp-server/"
+  - "scripts/"

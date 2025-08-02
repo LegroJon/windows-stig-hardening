@@ -3,7 +3,8 @@
         "*": true,
         "yaml": true,
         "plaintext": true,
-        "markdown": true
+        "markdown": true,
+        "powershell": true
     },
     "github.copilot.chat.welcomeMessage": "never",
     "github.copilot.advanced": {
@@ -19,12 +20,57 @@
         "comments": true,
         "strings": true
     },
+    // Task automation settings
+    "task.allowAutomaticTasks": "on",
+    "powershell.scriptAnalysis.enable": true,
+    "powershell.scriptAnalysis.settingsPath": ".vscode/PSScriptAnalyzerSettings.psd1",
+    "powershell.codeFormatting.autoCorrectAliases": true,
+    "powershell.codeFormatting.useCorrectCasing": true,
+    // Real-time linting and validation
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit",
+        "source.organizeImports": "explicit"
+    },
+    "editor.formatOnSave": true,
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    // Spell checking
+    "cSpell.enabled": true,
+    "cSpell.words": [
+        "STIG",
+        "NIST",
+        "PowerShell",
+        "unicode",
+        "ascii"
+    ],
+    // PowerShell configuration
+    "powershell.powerShellDefaultVersion": "Windows PowerShell (x86)",
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "terminal.integrated.profiles.windows": {
+        "PowerShell": {
+            "source": "PowerShell",
+            "icon": "terminal-powershell",
+            "args": ["-ExecutionPolicy", "Bypass"]
+        }
+    },
     // CSS validation settings for template files
     "css.validate": true,
     "html.validate.styles": false,
     // Suppress CSS linting in template files since they contain placeholders
     "files.associations": {
-        "templates/*.html": "html"
+        "templates/*.html": "html",
+        "*.ps1": "powershell"
+    },
+    // File exclusions for better performance
+    "files.exclude": {
+        "**/node_modules": true,
+        "**/logs/*.log": true,
+        "**/reports/*.json": false,
+        "**/reports/*.html": false
+    },
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/logs": true
     },
     // Disable CSS validation for template directory
     "[html]": {

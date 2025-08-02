@@ -46,6 +46,7 @@ if not exist "server.js" (
 
 REM Start the MCP server
 echo [INFO] Starting MCP Server on port 8080...
+echo [INFO] Use the PowerShell script for more options: ..\scripts\Start-MCPServer.ps1
 echo [INFO] Press Ctrl+C to stop the server
 echo.
 

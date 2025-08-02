@@ -1,0 +1,20 @@
+{
+    "recommendations": [
+        "ms-vscode.powershell",
+        "github.vscode-pull-request-github",
+        "github.copilot",
+        "github.copilot-chat",
+        "ms-vscode.vscode-json",
+        "redhat.vscode-yaml",
+        "davidanson.vscode-markdownlint",
+        "streetsidesoftware.code-spell-checker",
+        "ms-vscode.vscode-eslint",
+        "bradlc.vscode-tailwindcss",
+        "visualstudioexptteam.vscodeintellicode",
+        "github.vscode-github-actions",
+        "ms-vscode.github-issues-prs"
+    ],
+    "unwantedRecommendations": [
+        "ms-vscode.vscode-typescript-next"
+    ]
+}
