@@ -17,7 +17,13 @@
     Include custom organizational rules in assessment
 
 .PARAMETER Format
-    Report output format. Options: JSON, HTML, CSV, ALL. Can specify multiple formats. Default: JSON
+    Report output format. Options: JSON, HTML, CSV, ALL, SUMMARY, EXECUTIVE. Can specify multiple formats. Default: JSON
+    - JSON: Complete technical data for integration
+    - HTML: Visual dashboard with charts and styling  
+    - CSV: Tabular data for spreadsheet analysis
+    - ALL: Generate JSON, HTML, and CSV reports
+    - SUMMARY: Single-page overview in Markdown format
+    - EXECUTIVE: High-level business report in Markdown format
 
 .PARAMETER RuleFilter
     Filter rules by category or severity. Examples: "CAT I", "SO", "WN11-SO-000001"
@@ -68,7 +74,7 @@ param(
     [switch]$IncludeCustomRules,
 
     [Parameter(Mandatory = $false)]
-    [ValidateSet("JSON", "HTML", "CSV", "ALL")]
+    [ValidateSet("JSON", "HTML", "CSV", "ALL", "SUMMARY", "EXECUTIVE")]
     [string[]]$Format,
 
     [Parameter(Mandatory = $false)]
@@ -91,6 +97,141 @@ function Test-IsAdministrator {
     $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
     $principal = New-Object Security.Principal.WindowsPrincipal($currentUser)
     return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
+# Report generation functions
+function Generate-SummaryReport {
+    param([hashtable]$Data)
+    
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $compliantCount = ($Data.Results | Where-Object { $_.Status -eq "Compliant" }).Count
+    $nonCompliantCount = ($Data.Results | Where-Object { $_.Status -eq "Non-Compliant" }).Count
+    $errorCount = ($Data.Results | Where-Object { $_.Status -eq "Error" }).Count
+    
+    $summary = @"
+# STIG Assessment Summary Report
+Generated: $timestamp  
+System: $($Data.Assessment.Computer)  
+Duration: $([math]::Round($Data.Assessment.Duration, 2)) seconds
+
+## Quick Overview
+- Total Rules Assessed: $($Data.Statistics.TotalRules)
+- Compliance Rate: $($Data.Statistics.CompliancePercentage)%
+- Admin Privileges: $(if ($Data.Assessment.Administrator) { "YES" } else { "NO (Limited Assessment)" })
+
+## Results Breakdown
+| Status | Count | Percentage |
+|--------|-------|------------|
+| Compliant | $compliantCount | $([math]::Round(($compliantCount / $Data.Statistics.TotalRules) * 100, 1))% |
+| Non-Compliant | $nonCompliantCount | $([math]::Round(($nonCompliantCount / $Data.Statistics.TotalRules) * 100, 1))% |
+| Errors | $errorCount | $([math]::Round(($errorCount / $Data.Statistics.TotalRules) * 100, 1))% |
+
+## Priority Actions Required
+"@
+
+    # Add priority actions based on results
+    if ($errorCount -gt 0) {
+        $summary += "`n### CRITICAL: Fix Execution Errors ($errorCount rules)"
+        if (-not $Data.Assessment.Administrator) {
+            $summary += "`n- Run as Administrator to resolve $errorCount privilege-related errors"
+        }
+        $summary += "`n- Error rate: $([math]::Round(($errorCount / $Data.Statistics.TotalRules) * 100, 1))% (Target: <5%)"
+    }
+    
+    if ($nonCompliantCount -gt 0) {
+        $summary += "`n### WARNING: Security Issues Found ($nonCompliantCount rules)"
+        $highRiskRules = $Data.Results | Where-Object { $_.Status -eq "Non-Compliant" -and $_.RuleID -like "*SO-000030*" }
+        if ($highRiskRules) {
+            $summary += "`n- CRITICAL: Windows Defender real-time protection disabled"
+        }
+        $summary += "`n- Review and remediate non-compliant security controls"
+    }
+    
+    $summary += "`n`n## Next Steps"
+    $summary += "`n1. Immediate: Fix execution environment (run as admin)"
+    $summary += "`n2. Short-term: Address security misconfigurations"
+    $summary += "`n3. Long-term: Expand rule coverage (current: $($Data.Statistics.TotalRules) rules)"
+    
+    return $summary
+}
+
+function Generate-ExecutiveReport {
+    param([hashtable]$Data)
+    
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $riskLevel = if ($Data.Statistics.CompliancePercentage -lt 20) { "HIGH" } 
+                elseif ($Data.Statistics.CompliancePercentage -lt 50) { "MEDIUM" } 
+                else { "LOW" }
+    
+    $riskColor = switch ($riskLevel) {
+        "HIGH" { "[HIGH]" }
+        "MEDIUM" { "[MEDIUM]" }
+        "LOW" { "[LOW]" }
+    }
+    
+    $executive = @"
+# Executive STIG Compliance Report
+Assessment Date: $timestamp  
+System: $($Data.Assessment.Computer)  
+Overall Risk Level: $riskColor $riskLevel
+
+---
+
+## Executive Summary
+
+### Compliance Posture
+- Current Compliance: $($Data.Statistics.CompliancePercentage)% of assessed controls
+- Rules Evaluated: $($Data.Statistics.TotalRules) security controls
+- Assessment Scope: Windows 11 STIG baseline
+
+### Key Findings
+"@
+
+    $errorCount = ($Data.Results | Where-Object { $_.Status -eq "Error" }).Count
+    $nonCompliantCount = ($Data.Results | Where-Object { $_.Status -eq "Non-Compliant" }).Count
+    
+    if ($errorCount -gt 0) {
+        $executive += "`n#### WARNING: Assessment Limitations"
+        $executive += "`n- $errorCount rules failed due to insufficient privileges"
+        $executive += "`n- Recommendation: Re-run assessment with administrator privileges for complete evaluation"
+    }
+    
+    if ($nonCompliantCount -gt 0) {
+        $executive += "`n#### ALERT: Security Risks Identified"
+        $criticalFindings = $Data.Results | Where-Object { $_.Status -eq "Non-Compliant" -and ($_.RuleID -like "*SO-000030*" -or $_.RuleID -like "*SO-000015*") }
+        if ($criticalFindings) {
+            $executive += "`n- Critical security controls are not properly configured"
+            $executive += "`n- Immediate action required to address high-risk findings"
+        }
+    }
+    
+    $executive += "`n`n### Business Impact"
+    $executive += "`n- Regulatory Compliance: $(if ($Data.Statistics.CompliancePercentage -gt 80) { "On track" } else { "Requires attention" })"
+    $executive += "`n- Security Posture: $(if ($Data.Statistics.CompliancePercentage -gt 70) { "Good" } elseif ($Data.Statistics.CompliancePercentage -gt 40) { "Needs improvement" } else { "Critical gaps identified" })"
+    $executive += "`n- Risk Exposure: $(if ($nonCompliantCount -eq 0) { "Minimal" } elseif ($nonCompliantCount -lt 3) { "Low" } elseif ($nonCompliantCount -lt 6) { "Medium" } else { "High" })"
+    
+    $executive += "`n`n### Recommended Actions"
+    $executive += "`n1. Immediate (24-48 hours):"
+    if ($errorCount -gt 0) {
+        $executive += "`n   - Complete assessment with proper administrative privileges"
+    }
+    if ($criticalFindings) {
+        $executive += "`n   - Address critical security control failures"
+    }
+    
+    $executive += "`n2. Short-term (1-2 weeks):"
+    $executive += "`n   - Remediate all identified non-compliant controls"
+    $executive += "`n   - Establish regular compliance monitoring"
+    
+    $executive += "`n3. Strategic (1-3 months):"
+    $executive += "`n   - Expand assessment coverage beyond current $($Data.Statistics.TotalRules) controls"
+    $executive += "`n   - Implement automated compliance monitoring"
+    $executive += "`n   - Develop organizational security baselines"
+    
+    $executive += "`n`n---"
+    $executive += "`n*This report provides a high-level overview for executive decision-making. Technical details are available in the complete assessment report.*"
+    
+    return $executive
 }
 
 if ($RequestAdmin -and -not (Test-IsAdministrator)) {
@@ -456,6 +597,20 @@ function Export-STIGReport {
             $htmlContent = Generate-HTMLReport -Data $AssessmentData
             $htmlContent | Out-File -FilePath $reportPath -Encoding UTF8
             Write-STIGLog "HTML report exported: $reportPath" -Level INFO
+        }
+        
+        "SUMMARY" {
+            $reportPath = Join-Path $OutputPath "$baseFileName-summary.md"
+            $summaryContent = Generate-SummaryReport -Data $AssessmentData
+            $summaryContent | Out-File -FilePath $reportPath -Encoding UTF8
+            Write-STIGLog "Summary report exported: $reportPath" -Level INFO
+        }
+        
+        "EXECUTIVE" {
+            $reportPath = Join-Path $OutputPath "$baseFileName-executive.md"
+            $execContent = Generate-ExecutiveReport -Data $AssessmentData
+            $execContent | Out-File -FilePath $reportPath -Encoding UTF8
+            Write-STIGLog "Executive report exported: $reportPath" -Level INFO
         }
         
         default {
@@ -1241,6 +1396,10 @@ try {
         # Handle multiple formats and "ALL" option
         if ($Format -contains "ALL") {
             $script:Config.reporting.export_formats = @("JSON", "HTML", "CSV")
+        } elseif ($Format -contains "SUMMARY") {
+            $script:Config.reporting.export_formats = @("SUMMARY")
+        } elseif ($Format -contains "EXECUTIVE") {
+            $script:Config.reporting.export_formats = @("EXECUTIVE")
         } else {
             $script:Config.reporting.export_formats = $Format
         }
@@ -1329,5 +1488,9 @@ try {
     Write-STIGLog "Assessment failed: $($_.Exception.Message)" -Level ERROR -ToHost
     exit 1
 }
+
+#endregion
+
+#region Unified Report Generation Functions
 
 #endregion
