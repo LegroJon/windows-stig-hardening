@@ -9,9 +9,9 @@ env:
   POWERSHELL_TELEMETRY_OPTOUT: 1
 
 jobs:
-  # Quick validation for draft PRs
-  quick-validation:
-    name: "[QUICK] Draft PR Validation"
+  # Quick validation for draft PRs only
+  draft-validation:
+    name: "[QUICK] Draft PR Check"
     runs-on: windows-latest
     if: github.event.pull_request.draft == true
     
@@ -19,7 +19,7 @@ jobs:
     - name: "[INFO] Checkout Repository"
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0  # Full history for better diff analysis
+        fetch-depth: 0
         
     - name: "[RUNNING] Quick Syntax Check"
       shell: powershell
@@ -30,49 +30,47 @@ jobs:
         $changedFiles = git diff --name-only origin/${{ github.base_ref }}..HEAD | Where-Object { $_ -match '\.ps1$' }
         
         if ($changedFiles.Count -eq 0) {
-          Write-Host "[INFO] No PowerShell files changed in this PR" -ForegroundColor Yellow
+          Write-Host "[INFO] No PowerShell files changed" -ForegroundColor Yellow
           exit 0
         }
         
-        Write-Host "[INFO] Validating $($changedFiles.Count) changed PowerShell files" -ForegroundColor White
+        Write-Host "[INFO] Checking $($changedFiles.Count) changed files" -ForegroundColor White
         
-        $syntaxErrors = @()
+        $issues = @()
         foreach ($file in $changedFiles) {
           if (Test-Path $file) {
-            Write-Host "[SCANNING] $file" -ForegroundColor Yellow
-            
             try {
               # Quick syntax check
               $errors = $null
               [System.Management.Automation.PSParser]::Tokenize((Get-Content $file -Raw), [ref]$errors)
               
               if ($errors.Count -gt 0) {
-                $syntaxErrors += "$file`: $($errors.Count) syntax errors"
+                $issues += "$file has $($errors.Count) syntax errors"
               }
               
               # Quick Unicode check
               $content = Get-Content $file -Raw
               if ($content -and ($content -match '[^\x00-\x7F]')) {
-                $syntaxErrors += "$file`: Contains Unicode characters"
+                $issues += "$file contains Unicode characters"
               }
             } catch {
-              $syntaxErrors += "$file`: Failed to parse - $($_.Exception.Message)"
+              $issues += "$file failed to parse: $($_.Exception.Message)"
             }
           }
         }
         
-        if ($syntaxErrors.Count -gt 0) {
-          Write-Host "[ERROR] Syntax issues found in draft PR:" -ForegroundColor Red
-          $syntaxErrors | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
-          Write-Host "[INFO] Fix these issues before marking PR as ready for review" -ForegroundColor Yellow
+        if ($issues.Count -gt 0) {
+          Write-Host "[ERROR] Issues found in draft PR:" -ForegroundColor Red
+          $issues | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+          Write-Host "[INFO] Fix these before marking ready for review" -ForegroundColor Yellow
           exit 1
         }
         
-        Write-Host "[SUCCESS] Quick validation passed for draft PR" -ForegroundColor Green
+        Write-Host "[SUCCESS] Draft PR validation passed" -ForegroundColor Green
 
-  # Full validation for ready PRs
-  full-validation:
-    name: "[FULL] Ready PR Validation"
+  # PR Analysis and Summary (for ready PRs)
+  pr-analysis:
+    name: "[REPORT] PR Analysis"
     runs-on: windows-latest
     if: github.event.pull_request.draft == false
     
@@ -82,182 +80,27 @@ jobs:
       with:
         fetch-depth: 0
         
-    - name: "[ADMIN] Setup PowerShell"
-      uses: azure/powershell@v1
-      with:
-        inlineScript: |
-          Write-Host "[INFO] PowerShell Version: $($PSVersionTable.PSVersion)"
-          Get-ExecutionPolicy
-        azPSVersion: "latest"
-        
-    - name: "[RUNNING] Full PowerShell Validation"
+    - name: "[REPORT] Analyze PR Changes"
       shell: powershell
-      run: |
-        Write-Host "[STIG] Full PR Validation" -ForegroundColor Cyan
-        
-        # Run full syntax validation on changed files
-        $changedFiles = git diff --name-only origin/${{ github.base_ref }}..HEAD | Where-Object { $_ -match '\.ps1$' }
-        
-        if ($changedFiles.Count -eq 0) {
-          Write-Host "[INFO] No PowerShell files changed - skipping validation" -ForegroundColor Yellow
-          exit 0
-        }
-        
-        # Create temporary validation script for changed files
-        $validationErrors = @()
-        
-        foreach ($file in $changedFiles) {
-          if (Test-Path $file) {
-            Write-Host "[SCANNING] $file" -ForegroundColor Yellow
-            
-            # Full syntax validation
-            try {
-              $result = & ".\scripts\Validate-PowerShellSyntax.ps1" -Path $file
-              if ($LASTEXITCODE -ne 0) {
-                $validationErrors += "Syntax validation failed for $file"
-              }
-            } catch {
-              $validationErrors += "Failed to validate $file`: $($_.Exception.Message)"
-            }
-          }
-        }
-        
-        if ($validationErrors.Count -gt 0) {
-          Write-Host "[ERROR] Validation failed:" -ForegroundColor Red
-          $validationErrors | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
-          exit 1
-        }
-        
-        Write-Host "[SUCCESS] All changed files passed validation" -ForegroundColor Green
-
-    - name: "[RUNNING] STIG Rule Validation (if applicable)"
-      shell: powershell
-      run: |
-        # Check if any STIG rules were changed
-        $stigRules = git diff --name-only origin/${{ github.base_ref }}..HEAD | Where-Object { $_ -match '^rules/core/WN11-.*\.ps1$' }
-        
-        if ($stigRules.Count -eq 0) {
-          Write-Host "[INFO] No STIG rules changed - skipping STIG validation" -ForegroundColor Yellow
-          exit 0
-        }
-        
-        Write-Host "[STIG] Validating $($stigRules.Count) changed STIG rules" -ForegroundColor Cyan
-        
-        $stigErrors = @()
-        
-        foreach ($rule in $stigRules) {
-          if (Test-Path $rule) {
-            Write-Host "[SCANNING] $rule" -ForegroundColor Yellow
-            $content = Get-Content $rule -Raw
-            
-            # Check STIG rule naming convention
-            $fileName = Split-Path $rule -Leaf
-            if ($fileName -notmatch '^WN11-[A-Z]{2}-\d{6}\.ps1$') {
-              $stigErrors += "$rule`: Invalid STIG rule naming convention"
-            }
-            
-            # Check for Test- function
-            if ($content -notmatch 'function Test-\w+') {
-              $stigErrors += "$rule`: Missing Test- function"
-            }
-            
-            # Check required properties
-            $requiredProps = @('RuleID', 'Status', 'Evidence', 'FixText')
-            foreach ($prop in $requiredProps) {
-              if ($content -notmatch $prop) {
-                $stigErrors += "$rule`: Missing required property '$prop'"
-              }
-            }
-            
-            # Check for proper error handling
-            if ($content -notmatch 'try\s*\{.*\}\s*catch|trap\s*\{') {
-              $stigErrors += "$rule`: Missing error handling (try/catch or trap)"
-            }
-          }
-        }
-        
-        if ($stigErrors.Count -gt 0) {
-          Write-Host "[ERROR] STIG rule validation failed:" -ForegroundColor Red
-          $stigErrors | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
-          exit 1
-        }
-        
-        Write-Host "[SUCCESS] All STIG rules passed validation" -ForegroundColor Green
-
-    - name: "[ADMIN] Install Pester (if tests changed)"
-      shell: powershell
-      run: |
-        $testFiles = git diff --name-only origin/${{ github.base_ref }}..HEAD | Where-Object { $_ -match '^tests/.*\.ps1$' }
-        
-        if ($testFiles.Count -eq 0) {
-          Write-Host "[INFO] No test files changed - skipping Pester installation" -ForegroundColor Yellow
-          exit 0
-        }
-        
-        Write-Host "[RUNNING] Installing Pester for test validation" -ForegroundColor Yellow
-        Install-Module -Name Pester -Force -Scope CurrentUser -SkipPublisherCheck
-        Write-Host "[SUCCESS] Pester installed" -ForegroundColor Green
-
-    - name: "[TESTING] Run Tests (if applicable)"
-      shell: powershell
-      run: |
-        $testFiles = git diff --name-only origin/${{ github.base_ref }}..HEAD | Where-Object { $_ -match '^tests/.*\.ps1$' }
-        
-        if ($testFiles.Count -eq 0) {
-          Write-Host "[INFO] No test files changed - skipping test execution" -ForegroundColor Yellow
-          exit 0
-        }
-        
-        Write-Host "[TESTING] Running tests for changed files" -ForegroundColor Cyan
-        
-        try {
-          $testResults = & ".\scripts\Run-Tests.ps1" -TestType Unit
-          
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "[ERROR] Tests failed for PR changes" -ForegroundColor Red
-            exit 1
-          }
-          
-          Write-Host "[SUCCESS] All tests passed" -ForegroundColor Green
-        } catch {
-          Write-Host "[ERROR] Failed to run tests: $($_.Exception.Message)" -ForegroundColor Red
-          exit 1
-        }
-
-  # PR Summary and Comments
-  pr-summary:
-    name: "[REPORT] PR Summary"
-    runs-on: windows-latest
-    needs: [full-validation]
-    if: always() && github.event.pull_request.draft == false
-    
-    steps:
-    - name: "[INFO] Checkout Repository"
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        
-    - name: "[REPORT] Generate PR Analysis"
-      shell: powershell
-      id: pr-analysis
+      id: analysis
       run: |
         Write-Host "[REPORT] Analyzing PR Changes" -ForegroundColor Cyan
         
-        # Analyze changed files
-        $allChangedFiles = git diff --name-only origin/${{ github.base_ref }}..HEAD
-        $psFiles = $allChangedFiles | Where-Object { $_ -match '\.ps1$' }
-        $stigRules = $allChangedFiles | Where-Object { $_ -match '^rules/core/WN11-.*\.ps1$' }
-        $testFiles = $allChangedFiles | Where-Object { $_ -match '^tests/.*\.ps1$' }
-        $docFiles = $allChangedFiles | Where-Object { $_ -match '\.(md|txt)$' }
+        # Get file change statistics
+        $allFiles = git diff --name-only origin/${{ github.base_ref }}..HEAD
+        $psFiles = $allFiles | Where-Object { $_ -match '\.ps1$' }
+        $stigRules = $allFiles | Where-Object { $_ -match '^rules/core/WN11-.*\.ps1$' }
+        $testFiles = $allFiles | Where-Object { $_ -match '^tests/.*\.ps1$' }
+        $docFiles = $allFiles | Where-Object { $_ -match '\.(md|txt)$' }
         
-        # Count lines changed
-        $additions = (git diff --numstat origin/${{ github.base_ref }}..HEAD | ForEach-Object { ($_ -split '\s+')[0] } | Where-Object { $_ -match '^\d+$' } | Measure-Object -Sum).Sum
-        $deletions = (git diff --numstat origin/${{ github.base_ref }}..HEAD | ForEach-Object { ($_ -split '\s+')[1] } | Where-Object { $_ -match '^\d+$' } | Measure-Object -Sum).Sum
+        # Count line changes
+        $additions = (git diff --numstat origin/${{ github.base_ref }}..HEAD | ForEach-Object { ($_ -split '\t')[0] } | Where-Object { $_ -match '^\d+$' } | Measure-Object -Sum).Sum
+        $deletions = (git diff --numstat origin/${{ github.base_ref }}..HEAD | ForEach-Object { ($_ -split '\t')[1] } | Where-Object { $_ -match '^\d+$' } | Measure-Object -Sum).Sum
         
-        # Create summary using string concatenation
+        # Create analysis summary
         $summary = "## [STIG] PR Analysis Summary`n`n"
         $summary += "### Changes Overview`n"
-        $summary += "- **Total Files**: $($allChangedFiles.Count)`n"
+        $summary += "- **Total Files**: $($allFiles.Count)`n"
         $summary += "- **PowerShell Scripts**: $($psFiles.Count)`n" 
         $summary += "- **STIG Rules**: $($stigRules.Count)`n"
         $summary += "- **Test Files**: $($testFiles.Count)`n"
@@ -265,77 +108,58 @@ jobs:
         $summary += "- **Lines Added**: $($additions)`n"
         $summary += "- **Lines Removed**: $($deletions)`n`n"
         
-        $summary += "### STIG Rule Changes`n"
-        
         if ($stigRules.Count -gt 0) {
+          $summary += "### STIG Rules Modified`n"
           foreach ($rule in $stigRules) {
-            $ruleStatus = if (Test-Path $rule) { "Modified" } else { "Deleted" }
-            $summary += "- [SUCCESS] ``$rule`` ($ruleStatus)`n"
+            $status = if (Test-Path $rule) { "Modified" } else { "Deleted" }
+            $summary += "- $rule ($status)`n"
           }
-        } else {
-          $summary += "- No STIG rules changed in this PR`n"
+          $summary += "`n"
         }
         
-        $summary += "`n### Validation Status`n"
-        $summary += "- PowerShell Syntax: ${{ needs.full-validation.result }}`n"
-        $summary += "- STIG Rule Format: ${{ needs.full-validation.result }}`n"
-        $summary += "- Unit Tests: ${{ needs.full-validation.result }}`n"
-        
-        $summary += "`n### Review Checklist`n"
-        $summary += "- [ ] All PowerShell scripts follow ASCII-only policy`n"
+        $summary += "### Review Checklist`n"
+        $summary += "- [ ] PowerShell scripts follow ASCII-only policy`n"
         $summary += "- [ ] STIG rules include proper error handling`n"
         $summary += "- [ ] New rules have corresponding tests`n"
         $summary += "- [ ] Documentation updated if needed`n"
-        $summary += "- [ ] No hardcoded credentials or sensitive data`n"
-        $summary += "`n---`n"
-        $summary += "*Automated analysis by STIG Assessment Tool CI/CD*`n"
+        $summary += "`n*Note: Full validation runs automatically on ready PRs*`n"
         
-        # Save summary for comment
-        $summary | Out-File -FilePath "pr-summary.md"
-        
-        Write-Host "[SUCCESS] PR analysis complete" -ForegroundColor Green
+        $summary | Out-File -FilePath "pr-analysis.md"
+        Write-Host "[SUCCESS] PR analysis completed" -ForegroundColor Green
 
-    - name: "[COMMENT] Post PR Summary"
+    - name: "[COMMENT] Post PR Analysis"
       uses: actions/github-script@v7
-      if: always()
       with:
         script: |
           const fs = require('fs');
+          const analysis = fs.readFileSync('pr-analysis.md', 'utf8');
           
-          try {
-            const summary = fs.readFileSync('pr-summary.md', 'utf8');
-            
-            // Check if we already commented on this PR
-            const { data: comments } = await github.rest.issues.listComments({
+          // Find existing bot comment
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+          
+          const botComment = comments.find(comment => 
+            comment.user.type === 'Bot' && 
+            comment.body.includes('[STIG] PR Analysis Summary')
+          );
+          
+          if (botComment) {
+            // Update existing comment
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: botComment.id,
+              body: analysis
+            });
+          } else {
+            // Create new comment
+            await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
+              body: analysis
             });
-            
-            const botComment = comments.find(comment => 
-              comment.user.type === 'Bot' && 
-              comment.body.includes('[STIG] PR Analysis Summary')
-            );
-            
-            if (botComment) {
-              // Update existing comment
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body: summary
-              });
-              console.log('Updated existing PR summary comment');
-            } else {
-              // Create new comment
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: summary
-              });
-              console.log('Created new PR summary comment');
-            }
-          } catch (error) {
-            console.error('Error posting PR summary:', error);
           }

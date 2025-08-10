@@ -1,16 +1,13 @@
-name: "[BADGES] Status Badges"
+name: "[STATS] Project Statistics"
 
 on:
   push:
     branches: [ main ]
-  schedule:
-    # Update badges weekly
-    - cron: '0 6 * * 1'
   workflow_dispatch:
 
 jobs:
-  update-badges:
-    name: "[REPORT] Update Repository Badges"
+  project-stats:
+    name: "[REPORT] Update Project Statistics"
     runs-on: windows-latest
     
     steps:
@@ -19,61 +16,26 @@ jobs:
       
     - name: "[RUNNING] Count Project Statistics"
       shell: powershell
-      id: stats
       run: |
-        Write-Host "[REPORT] Collecting Project Statistics" -ForegroundColor Cyan
+        Write-Host "[STATS] Collecting Project Statistics" -ForegroundColor Cyan
         
         # Count STIG rules
         $stigRules = (Get-ChildItem -Path "rules\core" -Filter "WN11-*.ps1").Count
-        Write-Host "[INFO] STIG Rules: $stigRules" -ForegroundColor White
         
-        # Count total PowerShell files
+        # Count PowerShell files
         $psFiles = (Get-ChildItem -Recurse -Filter "*.ps1").Count
-        Write-Host "[INFO] PowerShell Files: $psFiles" -ForegroundColor White
         
-        # Count lines of code (excluding comments and empty lines)
+        # Count lines of code
         $totalLines = 0
         Get-ChildItem -Recurse -Filter "*.ps1" | ForEach-Object {
           $content = Get-Content $_.FullName
           $codeLines = ($content | Where-Object { $_ -notmatch '^\s*$' -and $_ -notmatch '^\s*#' }).Count
           $totalLines += $codeLines
         }
-        Write-Host "[INFO] Lines of Code: $totalLines" -ForegroundColor White
         
-        # Check last assessment date
-        $lastReport = Get-ChildItem -Path "reports" -Filter "*.json" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-        $lastAssessment = if ($lastReport) { $lastReport.LastWriteTime.ToString("yyyy-MM-dd") } else { "Never" }
-        Write-Host "[INFO] Last Assessment: $lastAssessment" -ForegroundColor White
-        
-        # Output for other steps
-        echo "stig-rules=$stigRules" >> $env:GITHUB_OUTPUT
-        echo "ps-files=$psFiles" >> $env:GITHUB_OUTPUT  
-        echo "lines-of-code=$totalLines" >> $env:GITHUB_OUTPUT
-        echo "last-assessment=$lastAssessment" >> $env:GITHUB_OUTPUT
+        Write-Host "[STATS] Project Statistics:" -ForegroundColor Cyan
+        Write-Host "  STIG Rules: $stigRules" -ForegroundColor White
+        Write-Host "  PowerShell Files: $psFiles" -ForegroundColor White
+        Write-Host "  Lines of Code: $totalLines" -ForegroundColor White
         
         Write-Host "[SUCCESS] Statistics collected" -ForegroundColor Green
-
-    - name: "[REPORT] Display Current Status"
-      shell: powershell
-      run: |
-        Write-Host "[STIG] Project Status Dashboard" -ForegroundColor Cyan
-        Write-Host "=" -Repeat 50 -ForegroundColor Gray
-        
-        Write-Host "[INFO] STIG Rules Implemented: ${{ steps.stats.outputs.stig-rules }}" -ForegroundColor White
-        Write-Host "[INFO] Total PowerShell Files: ${{ steps.stats.outputs.ps-files }}" -ForegroundColor White
-        Write-Host "[INFO] Lines of Code: ${{ steps.stats.outputs.lines-of-code }}" -ForegroundColor White
-        Write-Host "[INFO] Last Assessment: ${{ steps.stats.outputs.last-assessment }}" -ForegroundColor White
-        
-        # Badge URLs (for README integration)
-        $stigBadge = "https://img.shields.io/badge/STIG_Rules-${{ steps.stats.outputs.stig-rules }}-blue"
-        $codeBadge = "https://img.shields.io/badge/Lines_of_Code-${{ steps.stats.outputs.lines-of-code }}-green"
-        $statusBadge = "https://img.shields.io/badge/Status-Active-brightgreen"
-        
-        Write-Host "=" -Repeat 50 -ForegroundColor Gray
-        Write-Host "[BADGES] Available Badge URLs:" -ForegroundColor Cyan
-        Write-Host "STIG Rules: $stigBadge" -ForegroundColor Yellow
-        Write-Host "Lines of Code: $codeBadge" -ForegroundColor Yellow  
-        Write-Host "Status: $statusBadge" -ForegroundColor Yellow
-        Write-Host "=" -Repeat 50 -ForegroundColor Gray
-        
-        Write-Host "[SUCCESS] Badge information generated" -ForegroundColor Green

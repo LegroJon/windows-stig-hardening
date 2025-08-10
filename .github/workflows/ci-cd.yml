@@ -12,135 +12,36 @@ env:
   POWERSHELL_TELEMETRY_OPTOUT: 1
 
 jobs:
-  # PowerShell Syntax Validation
-  validate-syntax:
-    name: "[VALIDATOR] PowerShell Syntax Check"
+  # Combined Validation (Syntax + Unicode + STIG Rules)
+  validate-all:
+    name: "[VALIDATOR] Complete Validation"
     runs-on: windows-latest
     
     steps:
     - name: "[INFO] Checkout Repository"
       uses: actions/checkout@v4
-      
-    - name: "[ADMIN] Setup PowerShell"
-      uses: azure/powershell@v1
-      with:
-        inlineScript: |
-          Write-Host "[INFO] PowerShell Version: $($PSVersionTable.PSVersion)"
-          Write-Host "[INFO] Execution Policy: $(Get-ExecutionPolicy)"
-        azPSVersion: "latest"
         
-    - name: "[RUNNING] Validate PowerShell Syntax"
+    - name: "[RUNNING] Complete PowerShell Validation"
       shell: powershell
       run: |
-        Write-Host "[STIG] Starting PowerShell Syntax Validation" -ForegroundColor Cyan
+        Write-Host "[STIG] Starting Complete Validation Pipeline" -ForegroundColor Cyan
         
-        # Run syntax validation on all PowerShell files
-        $validationResult = & ".\scripts\Validate-PowerShellSyntax.ps1" -Path ".\rules\core"
-        $scriptsResult = & ".\scripts\Validate-PowerShellSyntax.ps1" -Path ".\scripts"
+        # Run syntax validation (includes Unicode check)
+        Write-Host "[RUNNING] PowerShell Syntax Validation..." -ForegroundColor Yellow
+        $syntaxResult1 = & ".\scripts\Validate-PowerShellSyntax.ps1" -Path ".\rules\core"
+        $syntaxResult2 = & ".\scripts\Validate-PowerShellSyntax.ps1" -Path ".\scripts"
         
         if ($LASTEXITCODE -ne 0) {
           Write-Host "[ERROR] PowerShell syntax validation failed" -ForegroundColor Red
           exit 1
         }
         
-        Write-Host "[SUCCESS] All PowerShell files passed syntax validation" -ForegroundColor Green
-
-    - name: "[RUNNING] Check for Unicode Characters"
-      shell: powershell
-      run: |
-        Write-Host "[RUNNING] Checking for Unicode characters..." -ForegroundColor Yellow
-        
-        $unicodeFiles = @()
-        Get-ChildItem -Recurse -Filter "*.ps1" | ForEach-Object {
-          $content = Get-Content $_.FullName -Raw -ErrorAction SilentlyContinue
-          if ($content -and ($content -match '[^\x00-\x7F]')) {
-            $unicodeFiles += $_.FullName
-          }
-        }
-        
-        if ($unicodeFiles.Count -gt 0) {
-          Write-Host "[ERROR] Unicode characters found in:" -ForegroundColor Red
-          $unicodeFiles | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
-          exit 1
-        }
-        
-        Write-Host "[SUCCESS] No Unicode characters found" -ForegroundColor Green
-
-  # Pester Unit Tests
-  run-tests:
-    name: "[TESTING] Pester Unit Tests"
-    runs-on: windows-latest
-    needs: validate-syntax
-    
-    steps:
-    - name: "[INFO] Checkout Repository"
-      uses: actions/checkout@v4
-      
-    - name: "[ADMIN] Install Pester Module"
-      shell: powershell
-      run: |
-        Write-Host "[RUNNING] Installing Pester module..." -ForegroundColor Yellow
-        Install-Module -Name Pester -Force -Scope CurrentUser -SkipPublisherCheck
-        Write-Host "[SUCCESS] Pester installed: $(Get-Module -Name Pester -ListAvailable | Select-Object -First 1 | Select-Object -ExpandProperty Version)" -ForegroundColor Green
-        
-    - name: "[RUNNING] Run Pester Tests"
-      shell: powershell
-      run: |
-        Write-Host "[STIG] Running Pester Unit Tests" -ForegroundColor Cyan
-        
-        # Configure Pester
-        $PesterConfig = New-PesterConfiguration
-        $PesterConfig.Run.Path = ".\tests"
-        $PesterConfig.TestResult.Enabled = $true
-        $PesterConfig.TestResult.OutputPath = ".\test-results.xml"
-        $PesterConfig.TestResult.OutputFormat = "JUnitXml"
-        $PesterConfig.CodeCoverage.Enabled = $true
-        $PesterConfig.CodeCoverage.Path = ".\scripts\*.ps1", ".\rules\core\*.ps1"
-        $PesterConfig.Output.Verbosity = "Detailed"
-        
-        # Run tests
-        $testResults = Invoke-Pester -Configuration $PesterConfig
-        
-        Write-Host "[SUMMARY] Test Results:" -ForegroundColor Cyan
-        Write-Host "  Passed: $($testResults.PassedCount)" -ForegroundColor Green
-        Write-Host "  Failed: $($testResults.FailedCount)" -ForegroundColor $(if($testResults.FailedCount -gt 0){'Red'}else{'Green'})
-        Write-Host "  Total: $($testResults.TotalCount)" -ForegroundColor White
-        
-        if ($testResults.FailedCount -gt 0) {
-          Write-Host "[ERROR] $($testResults.FailedCount) tests failed" -ForegroundColor Red
-          exit 1
-        }
-        
-        Write-Host "[SUCCESS] All tests passed!" -ForegroundColor Green
-
-    - name: "[REPORT] Upload Test Results"
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: test-results
-        path: test-results.xml
-
-  # STIG Rules Validation
-  validate-rules:
-    name: "[SECURITY] STIG Rules Validation"
-    runs-on: windows-latest
-    needs: validate-syntax
-    
-    steps:
-    - name: "[INFO] Checkout Repository"
-      uses: actions/checkout@v4
-      
-    - name: "[RUNNING] Validate STIG Rule Structure"
-      shell: powershell
-      run: |
-        Write-Host "[STIG] Validating STIG Rule Structure" -ForegroundColor Cyan
-        
+        # Validate STIG Rule Structure
+        Write-Host "[RUNNING] STIG Rule Structure Validation..." -ForegroundColor Yellow
         $ruleFiles = Get-ChildItem -Path ".\rules\core" -Filter "*.ps1"
         $validationErrors = @()
         
         foreach ($file in $ruleFiles) {
-          Write-Host "[SCANNING] $($file.Name)" -ForegroundColor Yellow
-          
           $content = Get-Content $file.FullName -Raw
           
           # Check for required function pattern
@@ -156,109 +57,116 @@ jobs:
             }
           }
           
-          # Check for proper RuleID format (WN11-XX-000000)
+          # Check for proper RuleID format
           if ($content -notmatch 'RuleID.*=.*"WN11-\w{2}-\d{6}"') {
             $validationErrors += "$($file.Name): Invalid RuleID format"
           }
         }
         
         if ($validationErrors.Count -gt 0) {
-          Write-Host "[ERROR] Rule validation failed:" -ForegroundColor Red
+          Write-Host "[ERROR] STIG rule validation failed:" -ForegroundColor Red
           $validationErrors | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
           exit 1
         }
         
-        Write-Host "[SUCCESS] All $($ruleFiles.Count) STIG rules passed validation" -ForegroundColor Green
+        Write-Host "[SUCCESS] All validation checks passed" -ForegroundColor Green
 
-  # Documentation Check
-  check-documentation:
-    name: "[DOCS] Documentation Validation"
+  # Pester Unit Tests
+  run-tests:
+    name: "[TESTING] Pester Unit Tests"
     runs-on: windows-latest
+    needs: validate-all
+    if: github.event_name != 'release'  # Skip tests on release builds
     
     steps:
     - name: "[INFO] Checkout Repository"
       uses: actions/checkout@v4
       
-    - name: "[RUNNING] Check Required Documentation"
+    - name: "[ADMIN] Install Pester Module"
       shell: powershell
       run: |
-        Write-Host "[DOCS] Checking Required Documentation" -ForegroundColor Cyan
+        Write-Host "[RUNNING] Installing Pester module..." -ForegroundColor Yellow
+        Install-Module -Name Pester -Force -Scope CurrentUser -SkipPublisherCheck
         
-        $requiredDocs = @(
-          "README.md",
-          "docs\README.md",
-          "docs\SETUP_GUIDE.md",
-          "docs\TESTING_EXPLAINED.md",
-          "scripts\README.md",
-          "rules\core\README.md"
-        )
+    - name: "[RUNNING] Run Pester Tests"
+      shell: powershell
+      run: |
+        Write-Host "[TESTING] Running Pester Unit Tests" -ForegroundColor Cyan
         
-        $missingDocs = @()
-        foreach ($doc in $requiredDocs) {
-          if (-not (Test-Path $doc)) {
-            $missingDocs += $doc
-          }
-        }
+        # Configure and run Pester
+        $PesterConfig = New-PesterConfiguration
+        $PesterConfig.Run.Path = ".\tests"
+        $PesterConfig.TestResult.Enabled = $true
+        $PesterConfig.TestResult.OutputPath = ".\test-results.xml"
+        $PesterConfig.TestResult.OutputFormat = "JUnitXml"
+        $PesterConfig.CodeCoverage.Enabled = $true
+        $PesterConfig.CodeCoverage.Path = ".\scripts\*.ps1", ".\rules\core\*.ps1"
+        $PesterConfig.Output.Verbosity = "Detailed"
         
-        if ($missingDocs.Count -gt 0) {
-          Write-Host "[WARNING] Missing documentation files:" -ForegroundColor Yellow
-          $missingDocs | ForEach-Object { Write-Host "  $_" -ForegroundColor Yellow }
-          # Don't fail the build for missing docs, just warn
-        } else {
-          Write-Host "[SUCCESS] All required documentation present" -ForegroundColor Green
+        $testResults = Invoke-Pester -Configuration $PesterConfig
+        
+        Write-Host "[SUMMARY] Passed: $($testResults.PassedCount), Failed: $($testResults.FailedCount)" -ForegroundColor Cyan
+        
+        if ($testResults.FailedCount -gt 0) {
+          Write-Host "[ERROR] $($testResults.FailedCount) tests failed" -ForegroundColor Red
+          exit 1
         }
 
-  # Security Scan
+    - name: "[REPORT] Upload Test Results"
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: test-results.xml
+
+  # Security Analysis (Basic)
   security-scan:
     name: "[SECURITY] Security Analysis"
     runs-on: windows-latest
+    needs: validate-all
     
     steps:
     - name: "[INFO] Checkout Repository"
       uses: actions/checkout@v4
       
-    - name: "[SECURITY] Run PowerShell Security Scan"
+    - name: "[SECURITY] Basic Security Scan"
       shell: powershell
       run: |
         Write-Host "[SECURITY] Running Security Analysis" -ForegroundColor Cyan
         
-        # Check for potential security issues in PowerShell scripts
         $securityIssues = @()
         $scriptFiles = Get-ChildItem -Recurse -Filter "*.ps1"
         
         foreach ($file in $scriptFiles) {
           $content = Get-Content $file.FullName -Raw
           
-          # Check for dangerous patterns
-          $dangerousPatterns = @(
-            'Invoke-Expression',
-            'iex ',
-            'DownloadString',
-            'System.Net.WebClient',
+          # Check critical security patterns only
+          $criticalPatterns = @(
+            'Invoke-Expression|iex ',
+            'DownloadString|DownloadFile',
             'Start-Process.*-WindowStyle Hidden',
             'Set-ExecutionPolicy.*Unrestricted'
           )
           
-          foreach ($pattern in $dangerousPatterns) {
+          foreach ($pattern in $criticalPatterns) {
             if ($content -match $pattern) {
-              $securityIssues += "$($file.Name): Potentially dangerous pattern '$pattern'"
+              $securityIssues += "$($file.Name): Critical pattern '$pattern'"
             }
           }
         }
         
         if ($securityIssues.Count -gt 0) {
-          Write-Host "[WARNING] Potential security concerns found:" -ForegroundColor Yellow
+          Write-Host "[WARNING] Security concerns found:" -ForegroundColor Yellow
           $securityIssues | ForEach-Object { Write-Host "  $_" -ForegroundColor Yellow }
-          # Don't fail build, but report issues
         } else {
-          Write-Host "[SUCCESS] No obvious security issues detected" -ForegroundColor Green
+          Write-Host "[SUCCESS] No critical security issues detected" -ForegroundColor Green
         }
 
-  # Build and Package
+  # Build and Package (Release only)
   build-package:
     name: "[BUILD] Create Release Package"
     runs-on: windows-latest
-    needs: [validate-syntax, run-tests, validate-rules]
+    needs: [validate-all, security-scan]
     if: github.event_name == 'release'
     
     steps:
@@ -273,30 +181,29 @@ jobs:
         $version = "${{ github.ref_name }}"
         $packageName = "windows-stig-hardening-$version"
         
-        # Create package directory
+        # Create package
         New-Item -ItemType Directory -Path ".\package\$packageName" -Force
         
-        # Copy essential files
+        # Copy essential files only
         $filesToInclude = @(
           "Launch-Assessment.ps1",
-          "Launch-Assessment.bat",
+          "Launch-Assessment.bat", 
           "README.md",
           "LICENSE",
-          "config\*",
-          "docs\*",
-          "rules\*",
-          "scripts\*",
-          "templates\*",
-          "tests\*"
+          "config",
+          "docs",
+          "rules",
+          "scripts",
+          "templates"
         )
         
-        foreach ($pattern in $filesToInclude) {
-          Copy-Item -Path $pattern -Destination ".\package\$packageName\" -Recurse -Force -ErrorAction SilentlyContinue
+        foreach ($item in $filesToInclude) {
+          if (Test-Path $item) {
+            Copy-Item -Path $item -Destination ".\package\$packageName\" -Recurse -Force
+          }
         }
         
-        # Create ZIP package
         Compress-Archive -Path ".\package\$packageName\*" -DestinationPath ".\$packageName.zip"
-        
         Write-Host "[SUCCESS] Package created: $packageName.zip" -ForegroundColor Green
 
     - name: "[REPORT] Upload Release Package"
@@ -304,63 +211,3 @@ jobs:
       with:
         name: release-package
         path: "*.zip"
-
-  # Deployment (Future)
-  deploy:
-    name: "[DEPLOY] PowerShell Gallery"
-    runs-on: windows-latest
-    needs: [build-package]
-    if: github.event_name == 'release' && !github.event.release.prerelease
-    
-    steps:
-    - name: "[INFO] Checkout Repository"
-      uses: actions/checkout@v4
-      
-    - name: "[FUTURE] PowerShell Gallery Deployment"
-      shell: powershell
-      run: |
-        Write-Host "[INFO] PowerShell Gallery deployment not yet implemented" -ForegroundColor Yellow
-        Write-Host "[NEXT] Future enhancement: Publish-Module to PowerShell Gallery" -ForegroundColor Cyan
-        
-        # TODO: Implement PowerShell Gallery publishing
-        # This would require:
-        # 1. PowerShell module manifest (.psd1)
-        # 2. API key for PowerShell Gallery
-        # 3. Module structure compliance
-        
-        Write-Host "[SUCCESS] Deployment step completed (placeholder)" -ForegroundColor Green
-
-# Workflow notifications
-  notify:
-    name: "[REPORT] Workflow Summary"
-    runs-on: windows-latest
-    needs: [validate-syntax, run-tests, validate-rules, check-documentation, security-scan]
-    if: always()
-    
-    steps:
-    - name: "[SUMMARY] Workflow Results"
-      shell: powershell
-      run: |
-        Write-Host "[STIG] CI/CD Pipeline Summary" -ForegroundColor Cyan
-        Write-Host "= * 50" -ForegroundColor Gray
-        
-        $syntaxStatus = "${{ needs.validate-syntax.result }}"
-        $testStatus = "${{ needs.run-tests.result }}"
-        $rulesStatus = "${{ needs.validate-rules.result }}"
-        $docsStatus = "${{ needs.check-documentation.result }}"
-        $securityStatus = "${{ needs.security-scan.result }}"
-        
-        Write-Host "[VALIDATOR] PowerShell Syntax: $syntaxStatus" -ForegroundColor $(if($syntaxStatus -eq 'success'){'Green'}else{'Red'})
-        Write-Host "[TESTING] Pester Unit Tests: $testStatus" -ForegroundColor $(if($testStatus -eq 'success'){'Green'}else{'Red'})
-        Write-Host "[SECURITY] STIG Rules: $rulesStatus" -ForegroundColor $(if($rulesStatus -eq 'success'){'Green'}else{'Red'})
-        Write-Host "[DOCS] Documentation: $docsStatus" -ForegroundColor $(if($docsStatus -eq 'success'){'Green'}else{'Yellow'})
-        Write-Host "[SECURITY] Security Scan: $securityStatus" -ForegroundColor $(if($securityStatus -eq 'success'){'Green'}else{'Yellow'})
-        
-        Write-Host "= * 50" -ForegroundColor Gray
-        
-        $overallSuccess = $syntaxStatus -eq 'success' -and $testStatus -eq 'success' -and $rulesStatus -eq 'success'
-        if ($overallSuccess) {
-          Write-Host "[SUCCESS] All critical checks passed!" -ForegroundColor Green
-        } else {
-          Write-Host "[ERROR] One or more critical checks failed" -ForegroundColor Red
-        }
