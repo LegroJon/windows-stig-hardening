@@ -1,8 +1,8 @@
-name: "[STIG] Quality Gate - ASCII Validation"
+name: "[STIG] Quality Gate - ASCII Standards"
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
     branches: [main]
 
@@ -10,48 +10,7 @@ env:
   POWERSHELL_TELEMETRY_OPTOUT: 1
 
 jobs:
-  unicode-check:
-    name: "[VALIDATION] Unicode Character Check"
-    runs-on: windows-latest
-
-    steps:
-      - name: "[INFO] Checkout Repository"
-        uses: actions/checkout@v4
-
-      - name: "[SECURITY] Check for Unicode Characters"
-        shell: powershell
-        run: |
-          Write-Host "[RUNNING] Checking for Unicode characters in PowerShell files..." -ForegroundColor Cyan
-
-          $unicodeFound = $false
-          $psFiles = Get-ChildItem -Path . -Filter "*.ps1" -Recurse | Where-Object { $_.FullName -notlike "*node_modules*" -and $_.FullName -notlike "*logs*" }
-
-          foreach ($file in $psFiles) {
-            $content = Get-Content $file.FullName -Raw -Encoding UTF8 -ErrorAction SilentlyContinue
-            if (-not $content) { continue }
-
-            $matches = [regex]::Matches($content, '[^\x00-\x7F]')
-
-            if ($matches.Count -gt 0) {
-              $unicodeFound = $true
-              Write-Host "[ERROR] Unicode found in $($file.FullName):" -ForegroundColor Red
-              foreach ($match in $matches) {
-                $lineNum = ($content.Substring(0, $match.Index) -split "`n").Count
-                Write-Host "  Line $lineNum : '$($match.Value)' (Unicode: U+$($match.Value.ToCharArray()[0].ToString('X4')))" -ForegroundColor Yellow
-              }
-            } else {
-              Write-Host "[SUCCESS] Clean: $($file.Name)" -ForegroundColor Green
-            }
-          }
-
-          if ($unicodeFound) {
-            Write-Host "[ERROR] FAILED: Unicode characters must be replaced with ASCII equivalents" -ForegroundColor Red
-            Write-Host "[MANUAL] See COPILOT_INSTRUCTIONS.md for approved ASCII prefixes" -ForegroundColor Yellow
-            exit 1
-          } else {
-            Write-Host "[SUCCESS] No Unicode characters found in PowerShell files" -ForegroundColor Green
-          }
-
+  # STIG-specific ASCII prefix validation (unique functionality)
   ascii-prefix-check:
     name: "[VALIDATION] ASCII Prefix Standards"
     runs-on: windows-latest
@@ -70,7 +29,8 @@ jobs:
             "[STIG]", "[SUCCESS]", "[ERROR]", "[WARNING]", "[INFO]",
             "[ADMIN]", "[SECURITY]", "[RUNNING]", "[REPORT]", "[SUMMARY]",
             "[NEXT]", "[MANUAL]", "[RETRY]", "[COMPLETE]", "[ANALYSIS]",
-            "[VALIDATION]"
+            "[VALIDATION]", "[STATS]", "[QUICK]", "[COMMENT]", "[BUILD]",
+            "[TESTING]", "[VALIDATOR]", "[SCANNER]"
           )
 
           $issuesFound = $false
@@ -94,8 +54,8 @@ jobs:
             foreach ($match in $matches) {
               $message = $match.Groups[1].Value.Trim()
 
-              # Skip empty messages or variable interpolations
-              if ($message -and -not ($message -match "^\s*$") -and -not ($message.StartsWith('$'))) {
+              # Skip empty messages, variable interpolations, or short messages
+              if ($message -and -not ($message -match "^\s*$") -and -not ($message.StartsWith('$')) -and $message.Length -gt 5) {
                 $hasValidPrefix = $false
                 foreach ($prefix in $validPrefixes) {
                   if ($message.StartsWith($prefix)) {
@@ -104,7 +64,7 @@ jobs:
                   }
                 }
 
-                if (-not $hasValidPrefix -and $message.Length -gt 5) {
+                if (-not $hasValidPrefix) {
                   $issuesFound = $true
                   $lineNum = ($content.Substring(0, $match.Index) -split "`n").Count
                   Write-Host "[ERROR] Invalid prefix in $($file.Name) line $lineNum" -ForegroundColor Red
@@ -115,7 +75,7 @@ jobs:
             }
           }
 
-          Write-Host "[INFO] Checked $filesChecked PowerShell files" -ForegroundColor Cyan
+          Write-Host "[INFO] Checked $filesChecked PowerShell files for ASCII prefix compliance" -ForegroundColor Cyan
 
           if ($issuesFound) {
             Write-Host "[ERROR] FAILED: Use approved ASCII prefixes only" -ForegroundColor Red
