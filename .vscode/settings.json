@@ -75,13 +75,5 @@
     // Disable CSS validation for template directory
     "[html]": {
         "html.validate.styles": false
-    },
-    "chat.mcp.serverSampling": {
-        "windows-stig-hardening/.vscode/mcp.json: local-stig-mcp": {
-            "allowedModels": [
-                "github.copilot-chat/gpt-4.1",
-                "github.copilot-chat/claude-sonnet-4"
-            ]
-        }
     }
 }

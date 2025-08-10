@@ -50,14 +50,6 @@
         "check_os_version": true,
         "minimum_powershell_version": "5.1"
     },
-    "mcp_integration": {
-        "enabled": false,
-        "server_url": "localhost:8080",
-        "timeout_seconds": 30,
-        "retry_attempts": 3,
-        "secure_mode": true,
-        "auto_start_server": false
-    },
     "nist_ncp_integration": {
         "enabled": false,
         "repository_url": "https://ncp.nist.gov/repository",
@@ -72,7 +64,7 @@
         },
         "preferred_profiles": [
             "cybersecurity-framework",
-            "privacy-framework", 
+            "privacy-framework",
             "risk-management-framework"
         ]
     },

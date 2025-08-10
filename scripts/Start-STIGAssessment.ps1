@@ -4,7 +4,7 @@
 
 .DESCRIPTION
     A modular PowerShell tool for assessing DISA STIG compliance on Windows 11 systems.
-    This tool performs detection and assessment without making system changes, providing 
+    This tool performs detection and assessment without making system changes, providing
     detailed compliance reports with remediation guidance.
 
 .PARAMETER OutputPath
@@ -19,7 +19,7 @@
 .PARAMETER Format
     Report output format. Options: JSON, HTML, CSV, ALL, SUMMARY, EXECUTIVE. Can specify multiple formats. Default: JSON
     - JSON: Complete technical data for integration
-    - HTML: Visual dashboard with charts and styling  
+    - HTML: Visual dashboard with charts and styling
     - CSV: Tabular data for spreadsheet analysis
     - ALL: Generate JSON, HTML, and CSV reports
     - SUMMARY: Single-page overview in Markdown format
@@ -102,16 +102,16 @@ function Test-IsAdministrator {
 # Report generation functions
 function Generate-SummaryReport {
     param([hashtable]$Data)
-    
+
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $compliantCount = ($Data.Results | Where-Object { $_.Status -eq "Compliant" }).Count
     $nonCompliantCount = ($Data.Results | Where-Object { $_.Status -eq "Non-Compliant" }).Count
     $errorCount = ($Data.Results | Where-Object { $_.Status -eq "Error" }).Count
-    
+
     $summary = @"
 # STIG Assessment Summary Report
-Generated: $timestamp  
-System: $($Data.Assessment.Computer)  
+Generated: $timestamp
+System: $($Data.Assessment.Computer)
 Duration: $([math]::Round($Data.Assessment.Duration, 2)) seconds
 
 ## Quick Overview
@@ -137,7 +137,7 @@ Duration: $([math]::Round($Data.Assessment.Duration, 2)) seconds
         }
         $summary += "`n- Error rate: $([math]::Round(($errorCount / $Data.Statistics.TotalRules) * 100, 1))% (Target: <5%)"
     }
-    
+
     if ($nonCompliantCount -gt 0) {
         $summary += "`n### WARNING: Security Issues Found ($nonCompliantCount rules)"
         $highRiskRules = $Data.Results | Where-Object { $_.Status -eq "Non-Compliant" -and $_.RuleID -like "*SO-000030*" }
@@ -146,33 +146,33 @@ Duration: $([math]::Round($Data.Assessment.Duration, 2)) seconds
         }
         $summary += "`n- Review and remediate non-compliant security controls"
     }
-    
+
     $summary += "`n`n## Next Steps"
     $summary += "`n1. Immediate: Fix execution environment (run as admin)"
     $summary += "`n2. Short-term: Address security misconfigurations"
     $summary += "`n3. Long-term: Expand rule coverage (current: $($Data.Statistics.TotalRules) rules)"
-    
+
     return $summary
 }
 
 function Generate-ExecutiveReport {
     param([hashtable]$Data)
-    
+
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $riskLevel = if ($Data.Statistics.CompliancePercentage -lt 20) { "HIGH" } 
-                elseif ($Data.Statistics.CompliancePercentage -lt 50) { "MEDIUM" } 
+    $riskLevel = if ($Data.Statistics.CompliancePercentage -lt 20) { "HIGH" }
+                elseif ($Data.Statistics.CompliancePercentage -lt 50) { "MEDIUM" }
                 else { "LOW" }
-    
+
     $riskColor = switch ($riskLevel) {
         "HIGH" { "[HIGH]" }
         "MEDIUM" { "[MEDIUM]" }
         "LOW" { "[LOW]" }
     }
-    
+
     $executive = @"
 # Executive STIG Compliance Report
-Assessment Date: $timestamp  
-System: $($Data.Assessment.Computer)  
+Assessment Date: $timestamp
+System: $($Data.Assessment.Computer)
 Overall Risk Level: $riskColor $riskLevel
 
 ---
@@ -189,13 +189,13 @@ Overall Risk Level: $riskColor $riskLevel
 
     $errorCount = ($Data.Results | Where-Object { $_.Status -eq "Error" }).Count
     $nonCompliantCount = ($Data.Results | Where-Object { $_.Status -eq "Non-Compliant" }).Count
-    
+
     if ($errorCount -gt 0) {
         $executive += "`n#### WARNING: Assessment Limitations"
         $executive += "`n- $errorCount rules failed due to insufficient privileges"
         $executive += "`n- Recommendation: Re-run assessment with administrator privileges for complete evaluation"
     }
-    
+
     if ($nonCompliantCount -gt 0) {
         $executive += "`n#### ALERT: Security Risks Identified"
         $criticalFindings = $Data.Results | Where-Object { $_.Status -eq "Non-Compliant" -and ($_.RuleID -like "*SO-000030*" -or $_.RuleID -like "*SO-000015*") }
@@ -204,12 +204,12 @@ Overall Risk Level: $riskColor $riskLevel
             $executive += "`n- Immediate action required to address high-risk findings"
         }
     }
-    
+
     $executive += "`n`n### Business Impact"
     $executive += "`n- Regulatory Compliance: $(if ($Data.Statistics.CompliancePercentage -gt 80) { "On track" } else { "Requires attention" })"
     $executive += "`n- Security Posture: $(if ($Data.Statistics.CompliancePercentage -gt 70) { "Good" } elseif ($Data.Statistics.CompliancePercentage -gt 40) { "Needs improvement" } else { "Critical gaps identified" })"
     $executive += "`n- Risk Exposure: $(if ($nonCompliantCount -eq 0) { "Minimal" } elseif ($nonCompliantCount -lt 3) { "Low" } elseif ($nonCompliantCount -lt 6) { "Medium" } else { "High" })"
-    
+
     $executive += "`n`n### Recommended Actions"
     $executive += "`n1. Immediate (24-48 hours):"
     if ($errorCount -gt 0) {
@@ -218,33 +218,33 @@ Overall Risk Level: $riskColor $riskLevel
     if ($criticalFindings) {
         $executive += "`n   - Address critical security control failures"
     }
-    
+
     $executive += "`n2. Short-term (1-2 weeks):"
     $executive += "`n   - Remediate all identified non-compliant controls"
     $executive += "`n   - Establish regular compliance monitoring"
-    
+
     $executive += "`n3. Strategic (1-3 months):"
     $executive += "`n   - Expand assessment coverage beyond current $($Data.Statistics.TotalRules) controls"
     $executive += "`n   - Implement automated compliance monitoring"
     $executive += "`n   - Develop organizational security baselines"
-    
+
     $executive += "`n`n---"
     $executive += "`n*This report provides a high-level overview for executive decision-making. Technical details are available in the complete assessment report.*"
-    
+
     return $executive
 }
 
 if ($RequestAdmin -and -not (Test-IsAdministrator)) {
     Write-Host "`n[ADMIN] Requesting Administrator Privileges..." -ForegroundColor Yellow
     Write-Host "Some STIG checks require elevated privileges for accurate assessment." -ForegroundColor Gray
-    
+
     try {
         # Build argument list for elevated session
         $argList = @(
             "-ExecutionPolicy", "Bypass",
             "-File", "`"$PSCommandPath`""
         )
-        
+
         # Add original parameters (excluding RequestAdmin to avoid recursion)
         if ($OutputPath) { $argList += "-OutputPath", "`"$OutputPath`"" }
         if ($ConfigPath -ne ".\config\settings.json") { $argList += "-ConfigPath", "`"$ConfigPath`"" }
@@ -253,7 +253,7 @@ if ($RequestAdmin -and -not (Test-IsAdministrator)) {
         if ($RuleFilter) { $argList += "-RuleFilter", "`"$RuleFilter`"" }
         if ($LogLevel) { $argList += "-LogLevel", $LogLevel }
         if ($WhatIf) { $argList += "-WhatIf" }
-        
+
         Start-Process -FilePath "PowerShell.exe" -Verb RunAs -ArgumentList $argList
         Write-Host "Elevated session started. This window will close." -ForegroundColor Green
         exit 0
@@ -270,18 +270,18 @@ function Write-STIGLog {
     param(
         [Parameter(Mandatory = $true)]
         [string]$Message,
-        
+
         [Parameter(Mandatory = $false)]
         [ValidateSet("ERROR", "WARN", "INFO", "DEBUG")]
         [string]$Level = "INFO",
-        
+
         [Parameter(Mandatory = $false)]
         [switch]$ToHost
     )
-    
+
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $logEntry = "[$timestamp] [$Level] $Message"
-    
+
     # Output to console based on level
     if ($ToHost -or $script:Config.logging.log_to_console) {
         switch ($Level) {
@@ -291,7 +291,7 @@ function Write-STIGLog {
             "DEBUG" { Write-Host $logEntry -ForegroundColor Gray }
         }
     }
-    
+
     # Implement file logging
     if ($script:Config.logging -and $script:Config.output.logs_directory) {
         try {
@@ -300,11 +300,11 @@ function Write-STIGLog {
             if (-not (Test-Path $logsDir)) {
                 New-Item -Path $logsDir -ItemType Directory -Force | Out-Null
             }
-            
+
             # Generate log file path with date
             $logDate = Get-Date -Format "yyyy-MM-dd"
             $logFile = Join-Path $logsDir "STIG-Assessment-$logDate.log"
-            
+
             # Check log file size and rotate if necessary
             if (Test-Path $logFile) {
                 $logFileInfo = Get-Item $logFile
@@ -313,14 +313,14 @@ function Write-STIGLog {
                     # Rotate log file
                     $rotatedFile = Join-Path $logsDir "STIG-Assessment-$logDate-$(Get-Date -Format 'HHmmss').log"
                     Move-Item $logFile $rotatedFile
-                    
+
                     # Clean up old log files
                     $maxFiles = $script:Config.logging.max_log_files
                     $oldLogs = Get-ChildItem $logsDir -Filter "*.log" | Sort-Object LastWriteTime -Descending | Select-Object -Skip $maxFiles
                     $oldLogs | Remove-Item -Force -ErrorAction SilentlyContinue
                 }
             }
-            
+
             # Write to log file (only if log level meets threshold)
             $logLevels = @{
                 "ERROR" = 0
@@ -330,7 +330,7 @@ function Write-STIGLog {
             }
             $currentLogLevel = $script:Config.logging.level
             $messageLogLevel = $Level
-            
+
             if ($logLevels[$messageLogLevel] -le $logLevels[$currentLogLevel]) {
                 $logEntry | Out-File -FilePath $logFile -Append -Encoding UTF8
             }
@@ -340,7 +340,7 @@ function Write-STIGLog {
             Write-Verbose "Failed to write to log file: $($_.Exception.Message)"
         }
     }
-    
+
     Write-Verbose $logEntry
 }
 
@@ -352,37 +352,37 @@ function Test-AdminPrivileges {
 
 function Test-SystemRequirements {
     Write-STIGLog "Checking system requirements..." -Level INFO
-    
+
     # Check Windows version
     $osInfo = Get-CimInstance -ClassName Win32_OperatingSystem
     if ($osInfo.Caption -notlike "*Windows 11*") {
         throw "This tool requires Windows 11. Detected: $($osInfo.Caption)"
     }
-    
+
     # Check PowerShell version
     $psVersion = $PSVersionTable.PSVersion
     $minVersion = [Version]"5.1"
     if ($psVersion -lt $minVersion) {
         throw "PowerShell version $minVersion or higher required. Current: $psVersion"
     }
-    
+
     # Check admin privileges
     if ($script:Config.system.require_admin -and -not (Test-AdminPrivileges)) {
         throw "Administrator privileges required. Please run as Administrator."
     }
-    
+
     Write-STIGLog "System requirements check passed" -Level INFO
 }
 
 function Import-Configuration {
     param([string]$Path)
-    
+
     Write-STIGLog "Loading configuration from: $Path" -Level INFO
-    
+
     if (-not (Test-Path $Path)) {
         throw "Configuration file not found: $Path"
     }
-    
+
     try {
         $json = Get-Content $Path -Raw | ConvertFrom-Json
         # Convert PSCustomObject to Hashtable for easier access
@@ -403,25 +403,25 @@ function Get-STIGRules {
         [string]$RulesPath,
         [string]$Filter
     )
-    
+
     Write-STIGLog "Discovering STIG rules in: $RulesPath" -Level INFO
-    
+
     if (-not (Test-Path $RulesPath)) {
         Write-STIGLog "Rules directory not found: $RulesPath" -Level WARN
         return @()
     }
-    
+
     $ruleFiles = Get-ChildItem -Path $RulesPath -Filter "*.ps1" -File
     Write-STIGLog "Found $($ruleFiles.Count) rule files" -Level INFO
-    
+
     # Filter rules if specified
     if ($Filter) {
-        $ruleFiles = $ruleFiles | Where-Object { 
-            $_.BaseName -like "*$Filter*" 
+        $ruleFiles = $ruleFiles | Where-Object {
+            $_.BaseName -like "*$Filter*"
         }
         Write-STIGLog "Filtered to $($ruleFiles.Count) rules matching '$Filter'" -Level INFO
     }
-    
+
     return $ruleFiles
 }
 
@@ -430,7 +430,7 @@ function Invoke-STIGRule {
         [System.IO.FileInfo]$RuleFile,
         [int]$TimeoutSeconds = 30
     )
-    
+
     $ruleResult = @{
         RuleID = $RuleFile.BaseName
         RuleFile = $RuleFile.FullName
@@ -440,22 +440,22 @@ function Invoke-STIGRule {
         ExecutionTime = 0
         ErrorMessage = ""
     }
-    
+
     try {
         Write-STIGLog "Executing rule: $($RuleFile.BaseName)" -Level DEBUG
         $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
-        
+
         # Import the rule script
         . $RuleFile.FullName
-        
+
         # Extract function name (should be Test-* based on our naming convention)
         $content = Get-Content $RuleFile.FullName -Raw
         $functionMatch = [regex]::Match($content, 'function\s+(Test-[^\s\{]+)')
-        
+
         if ($functionMatch.Success) {
             $functionName = $functionMatch.Groups[1].Value
             Write-STIGLog "Found function: $functionName" -Level DEBUG
-            
+
             # Execute the rule function directly (simpler than jobs for now)
             try {
                 $result = & $functionName
@@ -463,10 +463,10 @@ function Invoke-STIGRule {
             catch {
                 throw "Error executing function: $($_.Exception.Message)"
             }
-            
+
             $stopwatch.Stop()
             $ruleResult.ExecutionTime = $stopwatch.ElapsedMilliseconds
-            
+
             if ($result) {
                 # Validate result structure
                 if ($result.RuleID -and $result.Status) {
@@ -492,7 +492,7 @@ function Invoke-STIGRule {
         $ruleResult.ErrorMessage = $_.Exception.Message
         Write-STIGLog "Rule failed: $($RuleFile.BaseName) - $($_.Exception.Message)" -Level ERROR
     }
-    
+
     return $ruleResult
 }
 
@@ -501,32 +501,32 @@ function Start-STIGAssessment {
         [array]$Rules,
         [hashtable]$Config
     )
-    
+
     # Start timing
     $startTime = Get-Date
-    
+
     Write-STIGLog "Starting STIG assessment with $($Rules.Count) rules" -Level INFO
     $results = @()
     $compliantCount = 0
     $nonCompliantCount = 0
     $errorCount = 0
-    
+
     # Create progress tracking
     $totalRules = $Rules.Count
     $currentRule = 0
-    
+
     foreach ($rule in $Rules) {
         $currentRule++
         $progressPercent = [math]::Round(($currentRule / $totalRules) * 100, 1)
-        
+
         Write-Progress -Activity "STIG Assessment in Progress" `
                       -Status "Processing rule $currentRule of $totalRules ($progressPercent%)" `
                       -CurrentOperation $rule.BaseName `
                       -PercentComplete $progressPercent
-        
+
         $result = Invoke-STIGRule -RuleFile $rule -TimeoutSeconds $Config.scanning.rule_timeout
         $results += $result
-        
+
         # Update counters
         switch ($result.Status) {
             "Compliant" { $compliantCount++ }
@@ -534,13 +534,13 @@ function Start-STIGAssessment {
             "Error" { $errorCount++ }
         }
     }
-    
+
     Write-Progress -Activity "STIG Assessment" -Completed
-    
+
     # Calculate duration
     $endTime = Get-Date
     $duration = ($endTime - $startTime).TotalSeconds
-    
+
     # Create assessment summary
     $summary = @{
         Assessment = @{
@@ -557,13 +557,13 @@ function Start-STIGAssessment {
             Compliant = $compliantCount
             NonCompliant = $nonCompliantCount
             Errors = $errorCount
-            CompliancePercentage = if ($totalRules -gt 0) { 
-                [math]::Round((($compliantCount / $totalRules) * 100), 2) 
+            CompliancePercentage = if ($totalRules -gt 0) {
+                [math]::Round((($compliantCount / $totalRules) * 100), 2)
             } else { 0 }
         }
         Results = $results
     }
-    
+
     Write-STIGLog "Assessment completed: $compliantCount compliant, $nonCompliantCount non-compliant, $errorCount errors" -Level INFO
     return $summary
 }
@@ -574,62 +574,62 @@ function Export-STIGReport {
         [string]$OutputPath,
         [string]$Format = "JSON"
     )
-    
+
     $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
     $baseFileName = "STIG-Assessment-$timestamp"
-    
+
     switch ($Format.ToUpper()) {
         "JSON" {
             $reportPath = Join-Path $OutputPath "$baseFileName.json"
             $AssessmentData | ConvertTo-Json -Depth 10 | Out-File -FilePath $reportPath -Encoding UTF8
             Write-STIGLog "JSON report exported: $reportPath" -Level INFO
         }
-        
+
         "CSV" {
             $reportPath = Join-Path $OutputPath "$baseFileName.csv"
             $csvData = $AssessmentData.Results | Select-Object RuleID, Status, Evidence, FixText, ExecutionTime, ErrorMessage
             $csvData | Export-Csv -Path $reportPath -NoTypeInformation -Encoding UTF8
             Write-STIGLog "CSV report exported: $reportPath" -Level INFO
         }
-        
+
         "HTML" {
             $reportPath = Join-Path $OutputPath "$baseFileName.html"
             $htmlContent = Generate-HTMLReport -Data $AssessmentData
             $htmlContent | Out-File -FilePath $reportPath -Encoding UTF8
             Write-STIGLog "HTML report exported: $reportPath" -Level INFO
         }
-        
+
         "SUMMARY" {
             $reportPath = Join-Path $OutputPath "$baseFileName-summary.md"
             $summaryContent = Generate-SummaryReport -Data $AssessmentData
             $summaryContent | Out-File -FilePath $reportPath -Encoding UTF8
             Write-STIGLog "Summary report exported: $reportPath" -Level INFO
         }
-        
+
         "EXECUTIVE" {
             $reportPath = Join-Path $OutputPath "$baseFileName-executive.md"
             $execContent = Generate-ExecutiveReport -Data $AssessmentData
             $execContent | Out-File -FilePath $reportPath -Encoding UTF8
             Write-STIGLog "Executive report exported: $reportPath" -Level INFO
         }
-        
+
         default {
             throw "Unsupported report format: $Format"
         }
     }
-    
+
     return $reportPath
 }
 
 function Generate-HTMLReport {
     param([hashtable]$Data)
-    
+
     Write-STIGLog "Generating HTML report..." -Level INFO
-    
+
     # Check if external templates are available
     $templateDir = Join-Path (Split-Path $script:ScriptDir -Parent) "templates"
     $useExternalTemplates = Test-Path $templateDir
-    
+
     if ($useExternalTemplates) {
         Write-STIGLog "Using external HTML templates from: $templateDir" -Level INFO
         return Generate-HTMLReportFromTemplates -Data $Data -TemplateDir $templateDir
@@ -644,22 +644,22 @@ function Generate-HTMLReportFromTemplates {
         [hashtable]$Data,
         [string]$TemplateDir
     )
-    
+
     try {
         # Load basic template structure (this is a simplified version)
         $headerPath = Join-Path $TemplateDir "report-header.html"
         $footerPath = Join-Path $TemplateDir "report-footer.html"
-        
+
         if ((Test-Path $headerPath) -and (Test-Path $footerPath)) {
             $header = Get-Content $headerPath -Raw
             $footer = Get-Content $footerPath -Raw
-            
+
             # Generate body content using existing logic
             $bodyContent = Generate-HTMLBodyContent -Data $Data
-            
+
             # Combine header + body + footer
             $html = $header + $bodyContent + $footer
-            
+
             Write-STIGLog "HTML report generated using external templates" -Level INFO
             return $html
         } else {
@@ -676,11 +676,11 @@ function Generate-HTMLReportFromTemplates {
 
 function Generate-HTMLBodyContent {
     param([hashtable]$Data)
-    
+
     $compliantRules = $Data.Results | Where-Object { $_.Status -eq "Compliant" }
     $nonCompliantRules = $Data.Results | Where-Object { $_.Status -eq "Non-Compliant" }
     $errorRules = $Data.Results | Where-Object { $_.Status -eq "Error" }
-    
+
     # Calculate risk score based on non-compliance
     $riskScore = [math]::Round(($nonCompliantRules.Count / $Data.Statistics.TotalRules) * 100, 1)
     $riskLevel = switch ($riskScore) {
@@ -689,7 +689,7 @@ function Generate-HTMLBodyContent {
         { $_ -le 50 } { @{text="HIGH"; color="#e67e22"; bg="#fdf2e9"} }
         default { @{text="CRITICAL"; color="#e74c3c"; bg="#fadbd8"} }
     }
-    
+
     return @"
         <div class="header">
             <h1>
@@ -727,7 +727,7 @@ function Generate-HTMLBodyContent {
                 </div>
             </div>
         </div>
-        
+
         <div class="executive-summary">
             <div class="summary-header">
                 <h2><i class="fas fa-chart-line"></i> Executive Summary</h2>
@@ -736,13 +736,13 @@ function Generate-HTMLBodyContent {
                     RISK LEVEL: $($riskLevel.text)
                 </div>
             </div>
-            
+
             <div class="progress-container">
                 <div class="progress-bar" style="width: $($Data.Statistics.CompliancePercentage)%;">
                     $($Data.Statistics.CompliancePercentage)% Compliant
                 </div>
             </div>
-            
+
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-icon compliant">
@@ -783,9 +783,9 @@ function Get-RuleSectionsHTML {
         [array]$NonCompliantRules,
         [array]$ErrorRules
     )
-    
+
     $sectionsHTML = ""
-    
+
     # Non-compliant rules section
     if ($NonCompliantRules.Count -gt 0) {
         $sectionsHTML += @"
@@ -813,7 +813,7 @@ function Get-RuleSectionsHTML {
         </div>
 "@
     }
-    
+
     # Error rules section
     if ($ErrorRules.Count -gt 0) {
         $sectionsHTML += @"
@@ -840,7 +840,7 @@ function Get-RuleSectionsHTML {
         </div>
 "@
     }
-    
+
     # Compliant rules section
     if ($CompliantRules.Count -gt 0) {
         $sectionsHTML += @"
@@ -867,17 +867,17 @@ function Get-RuleSectionsHTML {
         </div>
 "@
     }
-    
+
     return $sectionsHTML
 }
 
 function Generate-HTMLReportEmbedded {
     param([hashtable]$Data)
-    
+
     $compliantRules = $Data.Results | Where-Object { $_.Status -eq "Compliant" }
     $nonCompliantRules = $Data.Results | Where-Object { $_.Status -eq "Non-Compliant" }
     $errorRules = $Data.Results | Where-Object { $_.Status -eq "Error" }
-    
+
     # Calculate risk score based on non-compliance
     $riskScore = [math]::Round(($nonCompliantRules.Count / $Data.Statistics.TotalRules) * 100, 1)
     $riskLevel = switch ($riskScore) {
@@ -886,7 +886,7 @@ function Generate-HTMLReportEmbedded {
         { $_ -le 50 } { @{text="HIGH"; color="#e67e22"; bg="#fdf2e9"} }
         default { @{text="CRITICAL"; color="#e74c3c"; bg="#fadbd8"} }
     }
-    
+
     $html = @"
 <!DOCTYPE html>
 <html lang="en">
@@ -897,14 +897,14 @@ function Generate-HTMLReportEmbedded {
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
         .container { max-width: 1400px; margin: 0 auto; }
-        
+
         /* Header Section */
         .header {
             background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
@@ -951,7 +951,7 @@ function Generate-HTMLReportEmbedded {
             gap: 10px;
             font-size: 1.1em;
         }
-        
+
         /* Executive Summary */
         .executive-summary {
             background: white;
@@ -975,7 +975,7 @@ function Generate-HTMLReportEmbedded {
             font-size: 1.1em;
             border: 2px solid $($riskLevel.color);
         }
-        
+
         /* Statistics Dashboard */
         .stats-grid {
             display: grid;
@@ -1013,7 +1013,7 @@ function Generate-HTMLReportEmbedded {
         .non-compliant { color: #e74c3c; }
         .error { color: #f39c12; }
         .compliance-rate { color: #3498db; }
-        
+
         /* Compliance Progress Bar */
         .progress-container {
             background: #ecf0f1;
@@ -1033,7 +1033,7 @@ function Generate-HTMLReportEmbedded {
             font-weight: bold;
             transition: width 0.5s ease;
         }
-        
+
         /* Rule Sections */
         .rules-section {
             background: white;
@@ -1053,7 +1053,7 @@ function Generate-HTMLReportEmbedded {
         .header-compliant { background: linear-gradient(135deg, #27ae60, #2ecc71); color: white; }
         .header-non-compliant { background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; }
         .header-error { background: linear-gradient(135deg, #f39c12, #e67e22); color: white; }
-        
+
         .rules-container { padding: 20px; }
         .rule-item {
             border-left: 5px solid #bdc3c7;
@@ -1071,7 +1071,7 @@ function Generate-HTMLReportEmbedded {
         .rule-compliant { border-left-color: #27ae60; background: linear-gradient(135deg, #d5f4e6, #a9dfbf); }
         .rule-non-compliant { border-left-color: #e74c3c; background: linear-gradient(135deg, #fadbd8, #f1948a); }
         .rule-error { border-left-color: #f39c12; background: linear-gradient(135deg, #fef9e7, #f7dc6f); }
-        
+
         .rule-header {
             display: flex;
             justify-content: between;
@@ -1093,7 +1093,7 @@ function Generate-HTMLReportEmbedded {
         .status-compliant { background: #27ae60; color: white; }
         .status-non-compliant { background: #e74c3c; color: white; }
         .status-error { background: #f39c12; color: white; }
-        
+
         .evidence {
             font-family: 'Courier New', monospace;
             background: rgba(52, 73, 94, 0.1);
@@ -1110,7 +1110,7 @@ function Generate-HTMLReportEmbedded {
             margin: 10px 0;
             border-left: 3px solid #27ae60;
         }
-        
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .header-grid { grid-template-columns: 1fr; }
@@ -1118,7 +1118,7 @@ function Generate-HTMLReportEmbedded {
             .header h1 { font-size: 2em; }
             .rule-item { padding: 15px; }
         }
-        
+
         /* Print Styles */
         @media print {
             body { background: white; }
@@ -1165,7 +1165,7 @@ function Generate-HTMLReportEmbedded {
                 </div>
             </div>
         </div>
-        
+
         <div class="executive-summary">
             <div class="summary-header">
                 <h2><i class="fas fa-chart-line"></i> Executive Summary</h2>
@@ -1174,13 +1174,13 @@ function Generate-HTMLReportEmbedded {
                     RISK LEVEL: $($riskLevel.text)
                 </div>
             </div>
-            
+
             <div class="progress-container">
                 <div class="progress-bar">
                     $($Data.Statistics.CompliancePercentage)% Compliant
                 </div>
             </div>
-            
+
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-icon compliant">
@@ -1295,7 +1295,7 @@ function Generate-HTMLReportEmbedded {
 
     $html += @"
     </div>
-    
+
     <script>
         // Add interactive features
         document.addEventListener('DOMContentLoaded', function() {
@@ -1307,7 +1307,7 @@ function Generate-HTMLReportEmbedded {
                     progressBar.style.width = '$($Data.Statistics.CompliancePercentage)%';
                 }, 500);
             }
-            
+
             // Add click handlers for rule items
             document.querySelectorAll('.rule-item').forEach(item => {
                 item.addEventListener('click', function() {
@@ -1329,7 +1329,7 @@ function Show-AssessmentSummary {
         [array]$Rules,
         [string]$OutputPath
     )
-    
+
     Write-Host "`n" -NoNewline
     Write-Host "Windows 11 STIG Assessment Tool" -ForegroundColor Cyan
     Write-Host "=" * 50 -ForegroundColor Cyan
@@ -1350,7 +1350,7 @@ function Show-AssessmentSummary {
 
 function Show-AssessmentResults {
     param([hashtable]$Results)
-    
+
     Write-Host "`nAssessment Results" -ForegroundColor Cyan
     Write-Host "=" * 30 -ForegroundColor Cyan
     Write-Host "Total Rules:    " -NoNewline -ForegroundColor White
@@ -1386,13 +1386,13 @@ try {
         exit 1
     }
     Write-STIGLog "Execution policy check passed" -Level INFO
-    
+
     # Load configuration
     $script:Config = Import-Configuration -Path $ConfigPath
-    
+
     # Override config with parameters
     if ($LogLevel) { $script:Config.logging.level = $LogLevel }
-    if ($Format) { 
+    if ($Format) {
         # Handle multiple formats and "ALL" option
         if ($Format -contains "ALL") {
             $script:Config.reporting.export_formats = @("JSON", "HTML", "CSV")
@@ -1405,41 +1405,41 @@ try {
         }
     }
     if ($IncludeCustomRules) { $script:Config.scanning.include_custom_rules = $true }
-    
+
     # Set output path
     if (-not $OutputPath) {
         $OutputPath = $script:Config.output.reports_directory
     }
-    
+
     # Create output directory if needed
     if ($script:Config.output.create_directories -and -not (Test-Path $OutputPath)) {
         New-Item -Path $OutputPath -ItemType Directory -Force | Out-Null
         Write-STIGLog "Created output directory: $OutputPath" -Level INFO
     }
-    
+
     # Check system requirements
     Test-SystemRequirements
-    
+
     # Discover rules
     $coreRules = Get-STIGRules -RulesPath $script:Config.rules.core_rules_path -Filter $RuleFilter
     $customRules = @()
-    
+
     if ($script:Config.scanning.include_custom_rules) {
         $customRules = Get-STIGRules -RulesPath $script:Config.rules.custom_rules_path -Filter $RuleFilter
     }
-    
+
     # Combine rules arrays properly
     $allRules = @()
     $allRules += $coreRules
     $allRules += $customRules
-    
+
     if ($allRules.Count -eq 0) {
         throw "No STIG rules found. Check rules directories."
     }
-    
+
     # Show assessment summary
     Show-AssessmentSummary -Config $script:Config -Rules $allRules -OutputPath $OutputPath
-    
+
     if ($WhatIf) {
         Write-STIGLog "WhatIf mode - Assessment preview completed" -Level INFO
         Write-Host "Assessment would process $($allRules.Count) rules" -ForegroundColor Yellow
@@ -1448,27 +1448,27 @@ try {
         }
         return
     }
-    
+
     # Execute STIG assessment
     Write-STIGLog "Starting STIG rule execution..." -Level INFO
     $assessmentResults = Start-STIGAssessment -Rules $allRules -Config $script:Config
-    
+
     # Show results summary
     Show-AssessmentResults -Results $assessmentResults
-    
+
     # Export reports
-    $reportFormats = if ($Format) { 
-        if ($Format -contains "ALL") { 
-            @("JSON", "HTML", "CSV") 
-        } else { 
-            $Format 
+    $reportFormats = if ($Format) {
+        if ($Format -contains "ALL") {
+            @("JSON", "HTML", "CSV")
+        } else {
+            $Format
         }
-    } else { 
-        $script:Config.reporting.export_formats 
+    } else {
+        $script:Config.reporting.export_formats
     }
-    
+
     Write-Host "`n[REPORTS] Generating Reports..." -ForegroundColor Cyan
-    
+
     foreach ($reportFormat in $reportFormats) {
         try {
             Write-Host "  Creating $reportFormat report..." -ForegroundColor Yellow
@@ -1481,9 +1481,9 @@ try {
             Write-Host "  [ERROR] Failed to generate $reportFormat report" -ForegroundColor Red
         }
     }
-    
+
     Write-STIGLog "Assessment completed successfully" -Level INFO
-    
+
 } catch {
     Write-STIGLog "Assessment failed: $($_.Exception.Message)" -Level ERROR -ToHost
     exit 1

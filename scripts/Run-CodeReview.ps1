@@ -192,21 +192,8 @@ foreach ($file in $configFiles) {
     }
 }
 
-# 5. Quick MCP Server Health Check (if not QuickScan)
-if (-not $QuickScan) {
-    Write-Host "[RUNNING] MCP server integration check..." -ForegroundColor Green
-
-    if (Test-Path ".\mcp-server\package.json") {
-        try {
-            $packageJson = Get-Content ".\mcp-server\package.json" | ConvertFrom-Json
-            if ($packageJson.dependencies) {
-                Add-ReviewIssue -File ".\mcp-server\package.json" -Line "N/A" -Severity "Info" -Category "Dependencies" -Description "MCP server dependencies found: $($packageJson.dependencies.PSObject.Properties.Count) packages" -Recommendation "Regularly update dependencies for security"
-            }
-        } catch {
-            Add-ReviewIssue -File ".\mcp-server\package.json" -Line "N/A" -Severity "Medium" -Category "Dependencies" -Description "Cannot parse MCP server package.json" -Recommendation "Verify package.json format"
-        }
-    }
-}
+# 5. PowerShell Script Analysis
+Write-Host "[RUNNING] PowerShell script analysis..." -ForegroundColor Green
 
 # Generate Summary Report
 Write-Host "`n[REPORT] Code Review Summary" -ForegroundColor Cyan

@@ -12,7 +12,7 @@ try {
     Write-Host "[ERROR] SUMMARY format failed: $($_.Exception.Message)" -ForegroundColor Red
 }
 
-# Test EXECUTIVE format  
+# Test EXECUTIVE format
 Write-Host "`n[TEST] Generating EXECUTIVE report..." -ForegroundColor Yellow
 try {
     .\scripts\Start-STIGAssessment.ps1 -Format EXECUTIVE -Verbose
