@@ -1,0 +1,128 @@
+﻿{
+    "Statistics":  {
+                       "Compliant":  1,
+                       "NonCompliant":  4,
+                       "Errors":  7,
+                       "CompliancePercentage":  8.33,
+                       "TotalRules":  12
+                   },
+    "Results":  [
+                    {
+                        "FixText":  "Manually verify audit policy in secpol.msc \u003e Advanced Audit Policy Configuration",
+                        "RuleFile":  "C:\\Users\\jonat\\OneDrive\\Desktop\\E-Books\\Cyber\\windows-stig-hardening\\rules\\core\\WN11-AU-000010.ps1",
+                        "RuleID":  "WN11-AU-000010",
+                        "Evidence":  "Error checking audit policy: Error 0x00000522 occurred:",
+                        "ExecutionTime":  54,
+                        "Status":  "Error",
+                        "ErrorMessage":  ""
+                    },
+                    {
+                        "FixText":  "Manually verify SMB1Protocol feature status",
+                        "RuleFile":  "C:\\Users\\jonat\\OneDrive\\Desktop\\E-Books\\Cyber\\windows-stig-hardening\\rules\\core\\WN11-SO-000001.ps1",
+                        "RuleID":  "WN11-SO-000001",
+                        "Evidence":  "Error checking SMB1Protocol: The requested operation requires elevation.\r\n",
+                        "ExecutionTime":  157,
+                        "Status":  "Error",
+                        "ErrorMessage":  ""
+                    },
+                    {
+                        "FixText":  "",
+                        "RuleFile":  "C:\\Users\\jonat\\OneDrive\\Desktop\\E-Books\\Cyber\\windows-stig-hardening\\rules\\core\\WN11-SO-000005.ps1",
+                        "RuleID":  "WN11-SO-000005",
+                        "Evidence":  "Error checking compliance: The requested operation requires elevation.\r\n",
+                        "ExecutionTime":  14,
+                        "Status":  "Error",
+                        "ErrorMessage":  ""
+                    },
+                    {
+                        "FixText":  "Manually verify Simple TCP/IP Services status: Get-WindowsOptionalFeature -Online -FeatureName SimpleTCP",
+                        "RuleFile":  "C:\\Users\\jonat\\OneDrive\\Desktop\\E-Books\\Cyber\\windows-stig-hardening\\rules\\core\\WN11-SO-000010.ps1",
+                        "RuleID":  "WN11-SO-000010",
+                        "Evidence":  "Error checking Simple TCP/IP Services: The requested operation requires elevation.\r\n",
+                        "ExecutionTime":  15,
+                        "Status":  "Error",
+                        "ErrorMessage":  ""
+                    },
+                    {
+                        "FixText":  "Configure DEP via System Properties \u003e Advanced \u003e Performance Settings \u003e Data Execution Prevention. Select \u0027Turn on DEP for essential Windows programs and services only\u0027 or \u0027Turn on DEP for all programs and services except those I select\u0027",
+                        "RuleFile":  "C:\\Users\\jonat\\OneDrive\\Desktop\\E-Books\\Cyber\\windows-stig-hardening\\rules\\core\\WN11-SO-000015.ps1",
+                        "RuleID":  "WN11-SO-000015",
+                        "Evidence":  "DEP is not properly configured: AlwaysOff (Disabled) (Policy: 2)",
+                        "ExecutionTime":  102,
+                        "Status":  "Non-Compliant",
+                        "ErrorMessage":  ""
+                    },
+                    {
+                        "FixText":  "Enable BitLocker: Control Panel \u003e System and Security \u003e BitLocker Drive Encryption \u003e Turn on BitLocker for the system drive. Follow the wizard to configure encryption and recovery options.",
+                        "RuleFile":  "C:\\Users\\jonat\\OneDrive\\Desktop\\E-Books\\Cyber\\windows-stig-hardening\\rules\\core\\WN11-SO-000020.ps1",
+                        "RuleID":  "WN11-SO-000020",
+                        "Evidence":  "Unable to determine BitLocker status: Access denied ",
+                        "ExecutionTime":  10227,
+                        "Status":  "Error",
+                        "ErrorMessage":  ""
+                    },
+                    {
+                        "FixText":  "",
+                        "RuleFile":  "C:\\Users\\jonat\\OneDrive\\Desktop\\E-Books\\Cyber\\windows-stig-hardening\\rules\\core\\WN11-SO-000025.ps1",
+                        "RuleID":  "WN11-SO-000025",
+                        "Evidence":  "Error checking Telnet Client status: The requested operation requires elevation.\r\n",
+                        "ExecutionTime":  13,
+                        "Status":  "Error",
+                        "ErrorMessage":  ""
+                    },
+                    {
+                        "FixText":  "Enable Windows Defender: Windows Security \u003e Virus \u0026 threat protection \u003e Virus \u0026 threat protection settings \u003e Real-time protection (Turn on)",
+                        "RuleFile":  "C:\\Users\\jonat\\OneDrive\\Desktop\\E-Books\\Cyber\\windows-stig-hardening\\rules\\core\\WN11-SO-000030.ps1",
+                        "RuleID":  "WN11-SO-000030",
+                        "Evidence":  "Windows Defender real-time protection is not fully enabled (RealTime: False, Antivirus: True, Antispyware: True)",
+                        "ExecutionTime":  502,
+                        "Status":  "Non-Compliant",
+                        "ErrorMessage":  ""
+                    },
+                    {
+                        "FixText":  "Manually verify password minimum length policy in secpol.msc",
+                        "RuleFile":  "C:\\Users\\jonat\\OneDrive\\Desktop\\E-Books\\Cyber\\windows-stig-hardening\\rules\\core\\WN11-SO-000035.ps1",
+                        "RuleID":  "WN11-SO-000035",
+                        "Evidence":  "Error checking password policy: Unable to retrieve password policy information",
+                        "ExecutionTime":  47,
+                        "Status":  "Error",
+                        "ErrorMessage":  ""
+                    },
+                    {
+                        "FixText":  "N/A - Remote Desktop is already disabled",
+                        "RuleFile":  "C:\\Users\\jonat\\OneDrive\\Desktop\\E-Books\\Cyber\\windows-stig-hardening\\rules\\core\\WN11-SO-000040.ps1",
+                        "RuleID":  "WN11-SO-000040",
+                        "Evidence":  "Remote Desktop Services is disabled (fDenyTSConnections = 1)",
+                        "ExecutionTime":  18,
+                        "Status":  "Compliant",
+                        "ErrorMessage":  ""
+                    },
+                    {
+                        "FixText":  "Configure anonymous access restrictions: secpol.msc \u003e Local Policies \u003e Security Options \u003e Set \u0027Network access: Restrict anonymous access to Named Pipes and Shares\u0027 = Enabled, \u0027Network access: Do not allow anonymous enumeration of SAM accounts\u0027 = Enabled",
+                        "RuleFile":  "C:\\Users\\jonat\\OneDrive\\Desktop\\E-Books\\Cyber\\windows-stig-hardening\\rules\\core\\WN11-SO-000045.ps1",
+                        "RuleID":  "WN11-SO-000045",
+                        "Evidence":  "Issues found: RestrictAnonymous: 0 (Required: 1)",
+                        "ExecutionTime":  28,
+                        "Status":  "Non-Compliant",
+                        "ErrorMessage":  ""
+                    },
+                    {
+                        "FixText":  "Disable services: Stop-Service and Set-Service -StartupType Disabled",
+                        "RuleFile":  "C:\\Users\\jonat\\OneDrive\\Desktop\\E-Books\\Cyber\\windows-stig-hardening\\rules\\core\\WN11-SO-000050.ps1",
+                        "RuleID":  "WN11-SO-000050",
+                        "Evidence":  "Running/Auto services: Browser (Computer Browser service), SSDPSRV (SSDP Discovery Service); Properly disabled services: 3; Not installed services: 7",
+                        "ExecutionTime":  35,
+                        "Status":  "Non-Compliant",
+                        "ErrorMessage":  ""
+                    }
+                ],
+    "Assessment":  {
+                       "Version":  "1.0.0",
+                       "Name":  "Windows 11 STIG Assessment",
+                       "Timestamp":  "2025-08-02 17:50:41",
+                       "Duration":  11.3845495,
+                       "Computer":  "SEBAS_TIAN",
+                       "User":  "jonat",
+                       "Administrator":  false
+                   }
+}

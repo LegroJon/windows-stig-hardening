@@ -1,0 +1,213 @@
+name: "[STIG] CI/CD Pipeline"
+
+on:
+  push:
+    branches: [ main, develop, fix-* ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ published ]
+
+env:
+  POWERSHELL_TELEMETRY_OPTOUT: 1
+
+jobs:
+  # Combined Validation (Syntax + Unicode + STIG Rules)
+  validate-all:
+    name: "[VALIDATOR] Complete Validation"
+    runs-on: windows-latest
+    
+    steps:
+    - name: "[INFO] Checkout Repository"
+      uses: actions/checkout@v4
+        
+    - name: "[RUNNING] Complete PowerShell Validation"
+      shell: powershell
+      run: |
+        Write-Host "[STIG] Starting Complete Validation Pipeline" -ForegroundColor Cyan
+        
+        # Run syntax validation (includes Unicode check)
+        Write-Host "[RUNNING] PowerShell Syntax Validation..." -ForegroundColor Yellow
+        $syntaxResult1 = & ".\scripts\Validate-PowerShellSyntax.ps1" -Path ".\rules\core"
+        $syntaxResult2 = & ".\scripts\Validate-PowerShellSyntax.ps1" -Path ".\scripts"
+        
+        if ($LASTEXITCODE -ne 0) {
+          Write-Host "[ERROR] PowerShell syntax validation failed" -ForegroundColor Red
+          exit 1
+        }
+        
+        # Validate STIG Rule Structure
+        Write-Host "[RUNNING] STIG Rule Structure Validation..." -ForegroundColor Yellow
+        $ruleFiles = Get-ChildItem -Path ".\rules\core" -Filter "*.ps1"
+        $validationErrors = @()
+        
+        foreach ($file in $ruleFiles) {
+          $content = Get-Content $file.FullName -Raw
+          
+          # Check for required function pattern
+          if ($content -notmatch 'function Test-\w+') {
+            $validationErrors += "$($file.Name): Missing Test- function"
+          }
+          
+          # Check for required return properties
+          $requiredProps = @('RuleID', 'Status', 'Evidence', 'FixText')
+          foreach ($prop in $requiredProps) {
+            if ($content -notmatch $prop) {
+              $validationErrors += "$($file.Name): Missing required property '$prop'"
+            }
+          }
+          
+          # Check for proper RuleID format
+          if ($content -notmatch 'RuleID.*=.*"WN11-\w{2}-\d{6}"') {
+            $validationErrors += "$($file.Name): Invalid RuleID format"
+          }
+        }
+        
+        if ($validationErrors.Count -gt 0) {
+          Write-Host "[ERROR] STIG rule validation failed:" -ForegroundColor Red
+          $validationErrors | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+          exit 1
+        }
+        
+        Write-Host "[SUCCESS] All validation checks passed" -ForegroundColor Green
+
+  # Pester Unit Tests
+  run-tests:
+    name: "[TESTING] Pester Unit Tests"
+    runs-on: windows-latest
+    needs: validate-all
+    if: github.event_name != 'release'  # Skip tests on release builds
+    
+    steps:
+    - name: "[INFO] Checkout Repository"
+      uses: actions/checkout@v4
+      
+    - name: "[ADMIN] Install Pester Module"
+      shell: powershell
+      run: |
+        Write-Host "[RUNNING] Installing Pester module..." -ForegroundColor Yellow
+        Install-Module -Name Pester -Force -Scope CurrentUser -SkipPublisherCheck
+        
+    - name: "[RUNNING] Run Pester Tests"
+      shell: powershell
+      run: |
+        Write-Host "[TESTING] Running Pester Unit Tests" -ForegroundColor Cyan
+        
+        # Configure and run Pester
+        $PesterConfig = New-PesterConfiguration
+        $PesterConfig.Run.Path = ".\tests"
+        $PesterConfig.TestResult.Enabled = $true
+        $PesterConfig.TestResult.OutputPath = ".\test-results.xml"
+        $PesterConfig.TestResult.OutputFormat = "JUnitXml"
+        $PesterConfig.CodeCoverage.Enabled = $true
+        $PesterConfig.CodeCoverage.Path = ".\scripts\*.ps1", ".\rules\core\*.ps1"
+        $PesterConfig.Output.Verbosity = "Detailed"
+        
+        $testResults = Invoke-Pester -Configuration $PesterConfig
+        
+        Write-Host "[SUMMARY] Passed: $($testResults.PassedCount), Failed: $($testResults.FailedCount)" -ForegroundColor Cyan
+        
+        if ($testResults.FailedCount -gt 0) {
+          Write-Host "[ERROR] $($testResults.FailedCount) tests failed" -ForegroundColor Red
+          exit 1
+        }
+
+    - name: "[REPORT] Upload Test Results"
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: test-results.xml
+
+  # Security Analysis (Basic)
+  security-scan:
+    name: "[SECURITY] Security Analysis"
+    runs-on: windows-latest
+    needs: validate-all
+    
+    steps:
+    - name: "[INFO] Checkout Repository"
+      uses: actions/checkout@v4
+      
+    - name: "[SECURITY] Basic Security Scan"
+      shell: powershell
+      run: |
+        Write-Host "[SECURITY] Running Security Analysis" -ForegroundColor Cyan
+        
+        $securityIssues = @()
+        $scriptFiles = Get-ChildItem -Recurse -Filter "*.ps1"
+        
+        foreach ($file in $scriptFiles) {
+          $content = Get-Content $file.FullName -Raw
+          
+          # Check critical security patterns only
+          $criticalPatterns = @(
+            'Invoke-Expression|iex ',
+            'DownloadString|DownloadFile',
+            'Start-Process.*-WindowStyle Hidden',
+            'Set-ExecutionPolicy.*Unrestricted'
+          )
+          
+          foreach ($pattern in $criticalPatterns) {
+            if ($content -match $pattern) {
+              $securityIssues += "$($file.Name): Critical pattern '$pattern'"
+            }
+          }
+        }
+        
+        if ($securityIssues.Count -gt 0) {
+          Write-Host "[WARNING] Security concerns found:" -ForegroundColor Yellow
+          $securityIssues | ForEach-Object { Write-Host "  $_" -ForegroundColor Yellow }
+        } else {
+          Write-Host "[SUCCESS] No critical security issues detected" -ForegroundColor Green
+        }
+
+  # Build and Package (Release only)
+  build-package:
+    name: "[BUILD] Create Release Package"
+    runs-on: windows-latest
+    needs: [validate-all, security-scan]
+    if: github.event_name == 'release'
+    
+    steps:
+    - name: "[INFO] Checkout Repository"
+      uses: actions/checkout@v4
+      
+    - name: "[BUILD] Create Release Package"
+      shell: powershell
+      run: |
+        Write-Host "[BUILD] Creating Release Package" -ForegroundColor Cyan
+        
+        $version = "${{ github.ref_name }}"
+        $packageName = "windows-stig-hardening-$version"
+        
+        # Create package
+        New-Item -ItemType Directory -Path ".\package\$packageName" -Force
+        
+        # Copy essential files only
+        $filesToInclude = @(
+          "Launch-Assessment.ps1",
+          "Launch-Assessment.bat", 
+          "README.md",
+          "LICENSE",
+          "config",
+          "docs",
+          "rules",
+          "scripts",
+          "templates"
+        )
+        
+        foreach ($item in $filesToInclude) {
+          if (Test-Path $item) {
+            Copy-Item -Path $item -Destination ".\package\$packageName\" -Recurse -Force
+          }
+        }
+        
+        Compress-Archive -Path ".\package\$packageName\*" -DestinationPath ".\$packageName.zip"
+        Write-Host "[SUCCESS] Package created: $packageName.zip" -ForegroundColor Green
+
+    - name: "[REPORT] Upload Release Package"
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-package
+        path: "*.zip"

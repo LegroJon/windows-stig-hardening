@@ -1,0 +1,41 @@
+name: "[STATS] Project Statistics"
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  project-stats:
+    name: "[REPORT] Update Project Statistics"
+    runs-on: windows-latest
+    
+    steps:
+    - name: "[INFO] Checkout Repository"
+      uses: actions/checkout@v4
+      
+    - name: "[RUNNING] Count Project Statistics"
+      shell: powershell
+      run: |
+        Write-Host "[STATS] Collecting Project Statistics" -ForegroundColor Cyan
+        
+        # Count STIG rules
+        $stigRules = (Get-ChildItem -Path "rules\core" -Filter "WN11-*.ps1").Count
+        
+        # Count PowerShell files
+        $psFiles = (Get-ChildItem -Recurse -Filter "*.ps1").Count
+        
+        # Count lines of code
+        $totalLines = 0
+        Get-ChildItem -Recurse -Filter "*.ps1" | ForEach-Object {
+          $content = Get-Content $_.FullName
+          $codeLines = ($content | Where-Object { $_ -notmatch '^\s*$' -and $_ -notmatch '^\s*#' }).Count
+          $totalLines += $codeLines
+        }
+        
+        Write-Host "[STATS] Project Statistics:" -ForegroundColor Cyan
+        Write-Host "  STIG Rules: $stigRules" -ForegroundColor White
+        Write-Host "  PowerShell Files: $psFiles" -ForegroundColor White
+        Write-Host "  Lines of Code: $totalLines" -ForegroundColor White
+        
+        Write-Host "[SUCCESS] Statistics collected" -ForegroundColor Green
