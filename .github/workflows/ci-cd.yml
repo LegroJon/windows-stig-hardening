@@ -12,289 +12,109 @@ env:
   POWERSHELL_TELEMETRY_OPTOUT: 1
 
 jobs:
-  # Comprehensive Validation (Syntax + Unicode + STIG Rules + PSScriptAnalyzer)
   validate-all:
     name: "[STIG] Complete Code Validation"
     runs-on: windows-latest
-
     steps:
       - name: "[INFO] Checkout Repository"
         uses: actions/checkout@v4
-
-      - name: "[ADMIN] Setup PowerShell Modules"
+      - name: "[ADMIN] Setup Analyzer"
         shell: powershell
         run: |
-          Write-Host "[RUNNING] Installing required PowerShell modules..." -ForegroundColor Yellow
           Set-PSRepository PSGallery -InstallationPolicy Trusted
-          Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
-          Write-Host "[SUCCESS] PowerShell modules installed" -ForegroundColor Green
-
-      - name: "[RUNNING] Complete PowerShell Validation"
+          Install-Module PSScriptAnalyzer -Force -Scope CurrentUser
+      - name: "[RUNNING] Validate"
         shell: powershell
         run: |
-          Write-Host "[STIG] Starting Complete Validation Pipeline" -ForegroundColor Cyan
-
-          # 1. Run syntax validation (includes Unicode check)
-          Write-Host "[RUNNING] PowerShell Syntax Validation..." -ForegroundColor Yellow
-          $syntaxResult1 = & ".\scripts\Validate-PowerShellSyntax.ps1" -Path ".\rules\core"
-          $syntaxResult2 = & ".\scripts\Validate-PowerShellSyntax.ps1" -Path ".\scripts"
-
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "[ERROR] PowerShell syntax validation failed" -ForegroundColor Red
-            exit 1
-          }
-
-          # 2. Run PSScriptAnalyzer for advanced analysis
-          Write-Host "[ANALYSIS] Running PSScriptAnalyzer..." -ForegroundColor Yellow
-          $results = Invoke-ScriptAnalyzer -Path . -Recurse -ReportSummary -Settings PSGallery -Include "*.ps1"
-
-          if ($results) {
-            $results | Export-Csv -Path "pssa-results.csv" -NoTypeInformation
-
-            Write-Host "[SUMMARY] PSScriptAnalyzer Results:" -ForegroundColor Cyan
-            $summary = $results | Group-Object Severity
-            foreach ($group in $summary) {
-              $color = switch ($group.Name) {
-                'Error' { 'Red' }
-                'Warning' { 'Yellow' }
-                'Information' { 'Blue' }
-                default { 'White' }
-              }
-              Write-Host "  $($group.Name): $($group.Count)" -ForegroundColor $color
-            }
-
-            # Fail on critical errors only
-            $errors = $results | Where-Object { $_.Severity -eq 'Error' }
-                  Write-Host "[RUNNING] PowerShell Syntax Validation..." -ForegroundColor Yellow
-                  & ".\scripts\Validate-PowerShellSyntax.ps1" -Path ".\rules\core"; $coreExit = $LASTEXITCODE
-                  & ".\scripts\Validate-PowerShellSyntax.ps1" -Path ".\scripts"; $scriptsExit = $LASTEXITCODE
-                  if ($coreExit -ne 0 -or $scriptsExit -ne 0) {
-                    Write-Host "[ERROR] PowerShell syntax validation failed" -ForegroundColor Red
-                    exit 1
-                  }
-              Write-Host "[ERROR] Critical PSScriptAnalyzer issues found:" -ForegroundColor Red
-              $errors | ForEach-Object {
-                  Write-Host "[RUNNING] Static Analysis (PSScriptAnalyzer)..." -ForegroundColor Yellow
-                  $psFiles = Get-ChildItem -Recurse -Filter *.ps1 | Select-Object -ExpandProperty FullName
-                  $results = @()
-                  if ($psFiles) {
-                    $results = Invoke-ScriptAnalyzer -Path $psFiles -ReportSummary -Settings PSGallery -ErrorAction Continue
-                  }
-              }
-              exit 1
-            }
-          } else {
-                    Write-Host "[SUMMARY] Static Analysis Results:" -ForegroundColor Cyan
-          }
-
-          # 3. Validate STIG Rule Structure
-          Write-Host "[RUNNING] STIG Rule Structure Validation..." -ForegroundColor Yellow
-          $ruleFiles = Get-ChildItem -Path ".\rules\core" -Filter "*.ps1"
-          $validationErrors = @()
-
-          foreach ($file in $ruleFiles) {
-            $content = Get-Content $file.FullName -Raw
-
-            # Check for required function pattern
-            if ($content -notmatch 'function Test-\w+') {
-              $validationErrors += "$($file.Name): Missing Test- function"
-            }
-                      Write-Host "[ERROR] Static analysis errors detected:" -ForegroundColor Red
-            # Check for required return properties
-            $requiredProps = @('RuleID', 'Status', 'Evidence', 'FixText')
-            foreach ($prop in $requiredProps) {
-              if ($content -notmatch $prop) {
-                $validationErrors += "$($file.Name): Missing required property '$prop'"
-              }
-            }
-
-            # Check for proper RuleID format
-            if ($content -notmatch 'RuleID.*=.*"WN11-\w{2}-\d{6}"') {
-              $validationErrors += "$($file.Name): Invalid RuleID format"
-            }
-          }
-
-          if ($validationErrors.Count -gt 0) {
-            Write-Host "[ERROR] STIG rule validation failed:" -ForegroundColor Red
-            $validationErrors | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
-            exit 1
-          }
-
-          Write-Host "[SUCCESS] All validation checks passed" -ForegroundColor Green
-
-      - name: "[REPORT] Upload Analysis Results"
-        uses: actions/upload-artifact@v4
+          $ErrorActionPreference='Stop'
+          Write-Host "[STIG] Validation start" -ForegroundColor Cyan
+          & .\scripts\Validate-PowerShellSyntax.ps1 -Path .\rules\core; $core=$LASTEXITCODE
+          & .\scripts\Validate-PowerShellSyntax.ps1 -Path .\scripts; $scripts=$LASTEXITCODE
+          if($core -ne 0 -or $scripts -ne 0){ Write-Host "[ERROR] Syntax/Unicode validation failed" -ForegroundColor Red; exit 1 }
+          $files = Get-ChildItem -Recurse -Filter *.ps1 | Select -Expand FullName
+          $pssa = if($files){ Invoke-ScriptAnalyzer -Path $files -ReportSummary -Settings PSGallery } else { @() }
+          if($pssa){ $pssa | Export-Csv pssa-results.csv -NoTypeInformation; ($pssa|Group Severity)|ForEach{Write-Host "  $($_.Name): $($_.Count)"}; $errs=$pssa|? Severity -eq 'Error'; if($errs){ Write-Host "[ERROR] Static analysis errors" -ForegroundColor Red; $errs|%{Write-Host "  $($_.ScriptName):$($_.Line) $($_.Message)" -ForegroundColor Red}; exit 1 } } else { Write-Host "[SUCCESS] No static analysis issues" -ForegroundColor Green }
+          $problems=@(); Get-ChildItem .\rules\core -Filter *.ps1 | ForEach-Object { $c= Get-Content $_ -Raw; if($c -notmatch 'function Test-\w+'){$problems+="$($_.Name): Missing Test- function"}; foreach($p in 'RuleID','Status','Evidence','FixText'){ if($c -notmatch $p){$problems+="$($_.Name): Missing $p"}}; if($c -notmatch 'RuleID.*=.*"WN11-\w{2}-\d{6}"'){$problems+="$($_.Name): Invalid RuleID format"} }
+          if($problems){ Write-Host "[ERROR] STIG rule validation failed" -ForegroundColor Red; $problems|%{Write-Host "  $_" -ForegroundColor Red}; exit 1 }
+          Write-Host "[SUCCESS] Validation passed" -ForegroundColor Green
+      - name: "[REPORT] Upload Analyzer Results"
         if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: validation-results
           path: pssa-results.csv
 
-  # Pester Unit Tests
   run-tests:
     name: "[STIG] Pester Unit Tests"
     runs-on: windows-latest
     needs: validate-all
-    if: github.event_name != 'release' # Skip tests on release builds
-
+    if: github.event_name != 'release'
     steps:
       - name: "[INFO] Checkout Repository"
         uses: actions/checkout@v4
-
-      - name: "[ADMIN] Install Pester Module"
+      - name: "[ADMIN] Install Pester"
+        shell: powershell
+        run: Install-Module Pester -Force -Scope CurrentUser -SkipPublisherCheck
+      - name: "[RUNNING] Run Tests"
         shell: powershell
         run: |
-          Write-Host "[RUNNING] Installing Pester module..." -ForegroundColor Yellow
-          Install-Module -Name Pester -Force -Scope CurrentUser -SkipPublisherCheck
-
-      - name: "[RUNNING] Run Pester Tests"
-        shell: powershell
-        run: |
-          Write-Host "[TESTING] Running Pester Unit Tests" -ForegroundColor Cyan
-
-          # Configure and run Pester
-          $PesterConfig = New-PesterConfiguration
-          $PesterConfig.Run.Path = ".\tests"
-          $PesterConfig.TestResult.Enabled = $true
-          $PesterConfig.TestResult.OutputPath = ".\test-results.xml"
-          $PesterConfig.TestResult.OutputFormat = "JUnitXml"
-          $PesterConfig.CodeCoverage.Enabled = $true
-          $PesterConfig.CodeCoverage.Path = ".\scripts\*.ps1", ".\rules\core\*.ps1"
-          $PesterConfig.Output.Verbosity = "Detailed"
-
-          $testResults = Invoke-Pester -Configuration $PesterConfig
-
-          Write-Host "[SUMMARY] Passed: $($testResults.PassedCount), Failed: $($testResults.FailedCount)" -ForegroundColor Cyan
-
-          if ($testResults.FailedCount -gt 0) {
-            Write-Host "[ERROR] $($testResults.FailedCount) tests failed" -ForegroundColor Red
-            exit 1
-          }
-
+          Write-Host "[STIG] Running Pester" -ForegroundColor Cyan
+          $cfg = New-PesterConfiguration; $cfg.Run.Path='.\tests'; $cfg.TestResult.Enabled=$true; $cfg.TestResult.OutputPath='test-results.xml'; $cfg.TestResult.OutputFormat='JUnitXml'; $cfg.CodeCoverage.Enabled=$true; $cfg.CodeCoverage.Path='.\scripts\*.ps1','.\rules\core\*.ps1'; $cfg.Output.Verbosity='Normal'; $r=Invoke-Pester -Configuration $cfg; if($r.FailedCount -gt 0){ Write-Host "[ERROR] Tests failed" -ForegroundColor Red; exit 1 }
       - name: "[REPORT] Upload Test Results"
-        uses: actions/upload-artifact@v4
         if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: test-results.xml
 
-  # Enhanced Security Analysis
   security-scan:
     name: "[SECURITY] Enhanced Security Analysis"
     runs-on: windows-latest
     needs: validate-all
-
     steps:
       - name: "[INFO] Checkout Repository"
         uses: actions/checkout@v4
-
-      - name: "[SECURITY] Comprehensive Security Scan"
+      - name: "[SECURITY] Scan"
         shell: powershell
         run: |
-          Write-Host "[SECURITY] Running Enhanced Security Analysis" -ForegroundColor Cyan
-
-          $securityIssues = @()
-          $scriptFiles = Get-ChildItem -Recurse -Filter "*.ps1" | Where-Object {
-            $_.FullName -notlike "*logs*" -and $_.FullName -notlike "*reports*"
+          Write-Host "[SECURITY] Scan start" -ForegroundColor Cyan
+          $patterns = @{
+            'Invoke-Expression|iex\s'='Dynamic code execution';
+            'DownloadString|DownloadFile'='Web download';
+            'Start-Process.*-WindowStyle\s+Hidden'='Hidden process';
+            'Set-ExecutionPolicy.*Unrestricted'='Unsafe execution policy';
+            'ConvertTo-SecureString.*-AsPlainText.*-Force'='Insecure password handling';
+            'System\\.Runtime\\.InteropServices'='Native interop';
+            'Add-Type.*-TypeDefinition.*\\[DllImport\\]'='PInvoke';
+            'System\\.Net\\.WebClient'='Legacy web client'
           }
-
-          foreach ($file in $scriptFiles) {
-            $content = Get-Content $file.FullName -Raw -ErrorAction SilentlyContinue
-            if (-not $content) { continue }
-
-            # Check for high-risk patterns specific to PowerShell
-            $highRiskPatterns = @{
-              'Invoke-Expression|iex\s' = 'Dynamic code execution'
-              'DownloadString|DownloadFile' = 'Web content download'
-              'Start-Process.*-WindowStyle\s+Hidden' = 'Hidden process execution'
-              'Set-ExecutionPolicy.*Unrestricted' = 'Unsafe execution policy'
-              'ConvertTo-SecureString.*-AsPlainText.*-Force' = 'Insecure password handling'
-              'System\.Runtime\.InteropServices' = 'Unsafe native code calls'
-              'Add-Type.*-TypeDefinition.*\[DllImport\]' = 'P/Invoke usage'
-              'System\.Net\.WebClient' = 'Direct web client usage'
-            }
-
-            foreach ($pattern in $highRiskPatterns.Keys) {
-              if ($content -match $pattern) {
-                $securityIssues += @{
-                  File = $file.FullName
-                  Issue = $highRiskPatterns[$pattern]
-                  Pattern = $pattern
-                  Severity = if ($pattern -match 'Invoke-Expression|DownloadString|Hidden') { 'High' } else { 'Medium' }
-                }
-              }
-            }
-          }
-
-          if ($securityIssues.Count -gt 0) {
-            Write-Host "[WARNING] Security concerns found:" -ForegroundColor Yellow
-            $securityIssues | ForEach-Object {
-              $color = if ($_.Severity -eq 'High') { 'Red' } else { 'Yellow' }
-              Write-Host "  [$($_.Severity)] $($_.File): $($_.Issue)" -ForegroundColor $color
-            }
-
-            # Export for review but only fail on High severity
-            $securityIssues | ConvertTo-Json | Out-File "security-findings.json"
-
-            $highRiskIssues = $securityIssues | Where-Object { $_.Severity -eq 'High' }
-            if ($highRiskIssues.Count -gt 0) {
-              Write-Host "[ERROR] High-risk security issues detected - build failed" -ForegroundColor Red
-              exit 1
-            }
-          } else {
-            Write-Host "[SUCCESS] No critical security issues detected" -ForegroundColor Green
-          }
-
+          $issues=@(); Get-ChildItem -Recurse -Filter *.ps1 | ForEach-Object { $c=Get-Content $_ -Raw -ErrorAction SilentlyContinue; if(-not $c){return}; foreach($k in $patterns.Keys){ if($c -match $k){ $sev = if($k -match 'Invoke-Expression|DownloadString|Hidden'){'High'} else {'Medium'}; $issues += [pscustomobject]@{File=$_.FullName; Issue=$patterns[$k]; Severity=$sev} } } }
+          if($issues){ $issues | ConvertTo-Json | Out-File security-findings.json; $issues | ForEach-Object { $col= if($_.Severity -eq 'High'){'Red'} else {'Yellow'}; Write-Host "  [$($_.Severity)] $($_.File): $($_.Issue)" -ForegroundColor $col }; if($issues | Where-Object Severity -eq 'High'){ Write-Host "[ERROR] High risk issues" -ForegroundColor Red; exit 1 } } else { Write-Host "[SUCCESS] No issues" -ForegroundColor Green }
       - name: "[REPORT] Upload Security Findings"
-        uses: actions/upload-artifact@v4
         if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: security-findings
           path: security-findings.json
 
-  # Build and Package (Release only)
   build-package:
     name: "[RUNNING] Create Release Package"
     runs-on: windows-latest
     needs: [validate-all, security-scan]
     if: github.event_name == 'release'
-
     steps:
       - name: "[INFO] Checkout Repository"
         uses: actions/checkout@v4
-
-      - name: "[BUILD] Create Release Package"
+      - name: "[RUNNING] Create Package"
         shell: powershell
         run: |
-          Write-Host "[BUILD] Creating Release Package" -ForegroundColor Cyan
-
-          $version = "${{ github.ref_name }}"
-          $packageName = "windows-stig-hardening-$version"
-
-          # Create package
-          New-Item -ItemType Directory -Path ".\package\$packageName" -Force
-
-          # Copy essential files only
-          $filesToInclude = @(
-            "Launch-Assessment.ps1",
-            "Launch-Assessment.bat",
-            "README.md",
-            "LICENSE",
-            "config",
-            "docs",
-            "rules",
-            "scripts",
-            "templates"
-          )
-
-          foreach ($item in $filesToInclude) {
-            if (Test-Path $item) {
-              Copy-Item -Path $item -Destination ".\package\$packageName\" -Recurse -Force
-            }
-          }
-
-          Compress-Archive -Path ".\package\$packageName\*" -DestinationPath ".\$packageName.zip"
-          Write-Host "[SUCCESS] Package created: $packageName.zip" -ForegroundColor Green
-
+          Write-Host "[RUNNING] Packaging" -ForegroundColor Cyan
+          $version='${{ github.ref_name }}'
+          $name="windows-stig-hardening-$version"
+          New-Item -ItemType Directory -Path .\package\$name -Force | Out-Null
+          foreach($i in 'Launch-Assessment.ps1','Launch-Assessment.bat','README.md','LICENSE','config','docs','rules','scripts','templates'){ if(Test-Path $i){ Copy-Item $i -Destination .\package\$name -Recurse -Force }}
+          Compress-Archive -Path .\package\$name\* -DestinationPath .\$name.zip -Force
+          Write-Host "[SUCCESS] Package created: $name.zip" -ForegroundColor Green
       - name: "[REPORT] Upload Release Package"
         uses: actions/upload-artifact@v4
         with:

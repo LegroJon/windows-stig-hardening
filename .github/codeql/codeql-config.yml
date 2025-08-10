@@ -1,15 +1,8 @@
-query-filters:
-  - exclude:
-      id: js/unused-local-variable
-  - exclude:
-      id: js/missing-token-validation
+## [INFO] Deprecated CodeQL configuration file
+## Retained only as a placeholder. No active CodeQL workflow uses this.
+## All prior path references (including removed mcp-server/) intentionally cleared.
+## Safe to delete once repository history no longer needs a stub.
 
-paths-ignore:
-  - "logs/"
-  - "reports/"
-  - "node_modules/"
-  - "*.log"
-
-paths:
-  - "mcp-server/"
-  - "scripts/"
+query-filters: []
+paths: []
+paths-ignore: []
