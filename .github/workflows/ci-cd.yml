@@ -14,7 +14,7 @@ env:
 jobs:
   # Comprehensive Validation (Syntax + Unicode + STIG Rules + PSScriptAnalyzer)
   validate-all:
-    name: "[VALIDATOR] Complete Code Validation"
+    name: "[STIG] Complete Code Validation"
     runs-on: windows-latest
 
     steps:
@@ -131,7 +131,7 @@ jobs:
 
   # Pester Unit Tests
   run-tests:
-    name: "[TESTING] Pester Unit Tests"
+    name: "[STIG] Pester Unit Tests"
     runs-on: windows-latest
     needs: validate-all
     if: github.event_name != 'release' # Skip tests on release builds
@@ -253,7 +253,7 @@ jobs:
 
   # Build and Package (Release only)
   build-package:
-    name: "[BUILD] Create Release Package"
+    name: "[RUNNING] Create Release Package"
     runs-on: windows-latest
     needs: [validate-all, security-scan]
     if: github.event_name == 'release'
