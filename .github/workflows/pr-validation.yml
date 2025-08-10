@@ -1,4 +1,4 @@
-name: "[STIG] Pull Request Validation"
+name: "[STIG] PR Validation"
 
 on:
   pull_request:
@@ -9,9 +9,8 @@ env:
   POWERSHELL_TELEMETRY_OPTOUT: 1
 
 jobs:
-  # Quick validation for draft PRs only
-  draft-validation:
-    name: "[STIG] Draft PR Check"
+  draft:
+    name: "[STIG] Draft Check"
     runs-on: windows-latest
     if: github.event.pull_request.draft == true
 
@@ -66,8 +65,7 @@ jobs:
           }
           Write-Host "[SUCCESS] Draft PR validation passed" -ForegroundColor Green
 
-  # PR Analysis and Summary (for ready PRs)
-  pr-analysis:
+  analysis:
     name: "[REPORT] PR Analysis"
     runs-on: windows-latest
     if: github.event.pull_request.draft == false

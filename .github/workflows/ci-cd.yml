@@ -1,8 +1,8 @@
-name: "[STIG] CI/CD Pipeline"
+name: "[STIG] CI"
 
 on:
   push:
-    branches: [main, develop, fix-*]
+    branches: [main, develop]
   pull_request:
     branches: [main]
   release:
@@ -12,110 +12,85 @@ env:
   POWERSHELL_TELEMETRY_OPTOUT: 1
 
 jobs:
-  validate-all:
-    name: "[STIG] Complete Code Validation"
+  validate:
+    name: "[STIG] Validate & Scan"
     runs-on: windows-latest
     steps:
-      - name: "[INFO] Checkout Repository"
+      - name: "[INFO] Checkout"
         uses: actions/checkout@v4
-      - name: "[ADMIN] Setup Analyzer"
+      - name: "[ADMIN] Install Modules"
         shell: powershell
         run: |
           Set-PSRepository PSGallery -InstallationPolicy Trusted
           Install-Module PSScriptAnalyzer -Force -Scope CurrentUser
-      - name: "[RUNNING] Validate"
+          Install-Module Pester -Force -Scope CurrentUser -SkipPublisherCheck
+      - name: "[RUNNING] Syntax & Unicode"
         shell: powershell
         run: |
           $ErrorActionPreference='Stop'
-          Write-Host "[STIG] Validation start" -ForegroundColor Cyan
-          & .\scripts\Validate-PowerShellSyntax.ps1 -Path .\rules\core; $core=$LASTEXITCODE
-          & .\scripts\Validate-PowerShellSyntax.ps1 -Path .\scripts; $scripts=$LASTEXITCODE
-          if($core -ne 0 -or $scripts -ne 0){ Write-Host "[ERROR] Syntax/Unicode validation failed" -ForegroundColor Red; exit 1 }
+          & .\scripts\Validate-PowerShellSyntax.ps1 -Path .\rules\core; $a=$LASTEXITCODE
+          & .\scripts\Validate-PowerShellSyntax.ps1 -Path .\scripts; $b=$LASTEXITCODE
+          if($a -ne 0 -or $b -ne 0){ Write-Host "[ERROR] Syntax/Unicode validation failed" -ForegroundColor Red; exit 1 }
+      - name: "[RUNNING] Static Analysis"
+        shell: powershell
+        run: |
           $files = Get-ChildItem -Recurse -Filter *.ps1 | Select -Expand FullName
-          $pssa = if($files){ Invoke-ScriptAnalyzer -Path $files -ReportSummary -Settings PSGallery } else { @() }
-          if($pssa){ $pssa | Export-Csv pssa-results.csv -NoTypeInformation; ($pssa|Group Severity)|ForEach{Write-Host "  $($_.Name): $($_.Count)"}; $errs=$pssa|? Severity -eq 'Error'; if($errs){ Write-Host "[ERROR] Static analysis errors" -ForegroundColor Red; $errs|%{Write-Host "  $($_.ScriptName):$($_.Line) $($_.Message)" -ForegroundColor Red}; exit 1 } } else { Write-Host "[SUCCESS] No static analysis issues" -ForegroundColor Green }
-          $problems=@(); Get-ChildItem .\rules\core -Filter *.ps1 | ForEach-Object { $c= Get-Content $_ -Raw; if($c -notmatch 'function Test-\w+'){$problems+="$($_.Name): Missing Test- function"}; foreach($p in 'RuleID','Status','Evidence','FixText'){ if($c -notmatch $p){$problems+="$($_.Name): Missing $p"}}; if($c -notmatch 'RuleID.*=.*"WN11-\w{2}-\d{6}"'){$problems+="$($_.Name): Invalid RuleID format"} }
-          if($problems){ Write-Host "[ERROR] STIG rule validation failed" -ForegroundColor Red; $problems|%{Write-Host "  $_" -ForegroundColor Red}; exit 1 }
-          Write-Host "[SUCCESS] Validation passed" -ForegroundColor Green
-      - name: "[REPORT] Upload Analyzer Results"
+          if(-not $files){ Write-Host "[WARNING] No PowerShell files found"; exit 0 }
+          $res = Invoke-ScriptAnalyzer -Path $files -ReportSummary -Settings PSGallery -ErrorAction Continue
+          if($res){ $res | Export-Csv pssa-results.csv -NoTypeInformation; ($res|Group Severity)|ForEach{Write-Host "  $($_.Name): $($_.Count)"}; $err=$res|? Severity -eq 'Error'; if($err){ Write-Host "[ERROR] Static analysis errors" -ForegroundColor Red; $err|%{Write-Host "  $($_.ScriptName):$($_.Line) $($_.Message)" -ForegroundColor Red}; exit 1 } } else { Write-Host "[SUCCESS] No static analysis issues" -ForegroundColor Green }
+      - name: "[RUNNING] STIG Rule Structure"
+        shell: powershell
+        run: |
+          $problems=@(); Get-ChildItem .\rules\core -Filter *.ps1 | ForEach-Object { $c= Get-Content $_ -Raw; if($c -notmatch 'function Test-\w+'){$problems+="$($_.Name): Missing Test- function"}; foreach($p in 'RuleID','Status','Evidence','FixText'){ if($c -notmatch $p){$problems+="$($_.Name): Missing $p"}}; if($c -notmatch 'RuleID.*=.*"WN11-\w{2}-\d{6}"'){$problems+="$($_.Name): Invalid RuleID format" } }
+          if($problems){ Write-Host "[ERROR] STIG rule validation failed" -ForegroundColor Red; $problems|%{Write-Host "  $_" -ForegroundColor Red}; exit 1 } else { Write-Host "[SUCCESS] Rule structure OK" -ForegroundColor Green }
+      - name: "[RUNNING] ASCII Prefix Check"
+        shell: powershell
+        run: |
+          $valid=@("[STIG]","[SUCCESS]","[ERROR]","[WARNING]","[INFO]","[ADMIN]","[SECURITY]","[RUNNING]","[REPORT]","[SUMMARY]","[NEXT]","[MANUAL]","[RETRY]","[COMPLETE]")
+          $bad=$false; $count=0
+          Get-ChildItem -Recurse -Filter *.ps1 | Where-Object { $_.FullName -notmatch 'node_modules|logs|reports' } | ForEach-Object { $c=Get-Content $_ -Raw; if(-not $c){return}; $count++; [regex]::Matches($c,'Write-Host\s+"([^"]+)"',[System.Text.RegularExpressions.RegexOptions]::IgnoreCase) | ForEach-Object { $m=$_.Groups[1].Value.Trim(); if($m.Length -gt 5 -and -not ($valid | ForEach-Object { if($m.StartsWith($_)){1} }) ){ $bad=$true; $line=($c.Substring(0,$_.Index) -split "`n").Count; Write-Host "[ERROR] Invalid prefix in $($_.Name) line $line" -ForegroundColor Red; Write-Host "  Message: '$m'" -ForegroundColor Yellow } } }
+          Write-Host "[INFO] Checked $count files" -ForegroundColor Cyan
+          if($bad){ Write-Host "[ERROR] ASCII prefix validation failed" -ForegroundColor Red; exit 1 } else { Write-Host "[SUCCESS] ASCII prefixes valid" -ForegroundColor Green }
+      - name: "[RUNNING] Security Scan"
+        shell: powershell
+        run: |
+          $patterns=@{'Invoke-Expression|iex\s'='Dynamic code execution';'DownloadString|DownloadFile'='Web download';'Start-Process.*-WindowStyle\s+Hidden'='Hidden process';'Set-ExecutionPolicy.*Unrestricted'='Unsafe execution policy';'ConvertTo-SecureString.*-AsPlainText.*-Force'='Insecure password handling';'System\\.Runtime\\.InteropServices'='Native interop';'Add-Type.*-TypeDefinition.*\\[DllImport\\]'='PInvoke';'System\\.Net\\.WebClient'='Legacy web client'}
+          $issues=@(); Get-ChildItem -Recurse -Filter *.ps1 | ForEach-Object { $c=Get-Content $_ -Raw -ErrorAction SilentlyContinue; if(-not $c){return}; foreach($k in $patterns.Keys){ if($c -match $k){ $sev= if($k -match 'Invoke-Expression|DownloadString|Hidden'){'High'} else {'Medium'}; $issues += [pscustomobject]@{File=$_.FullName; Issue=$patterns[$k]; Severity=$sev} } } }
+          if($issues){ $issues | ConvertTo-Json | Out-File security-findings.json; $issues | ForEach-Object { $col= if($_.Severity -eq 'High'){'Red'} else {'Yellow'}; Write-Host "  [$($_.Severity)] $($_.File): $($_.Issue)" -ForegroundColor $col }; if($issues | Where-Object Severity -eq 'High'){ Write-Host "[ERROR] High risk issues" -ForegroundColor Red; exit 1 } } else { Write-Host "[SUCCESS] No security issues" -ForegroundColor Green }
+      - name: "[REPORT] Upload Artifacts"
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: validation-results
-          path: pssa-results.csv
+          name: validation-artifacts
+          path: |
+            pssa-results.csv
+            security-findings.json
 
-  run-tests:
-    name: "[STIG] Pester Unit Tests"
+  test:
+    name: "[STIG] Tests & Package"
     runs-on: windows-latest
-    needs: validate-all
-    if: github.event_name != 'release'
+    needs: validate
     steps:
-      - name: "[INFO] Checkout Repository"
+      - name: "[INFO] Checkout"
         uses: actions/checkout@v4
-      - name: "[ADMIN] Install Pester"
-        shell: powershell
-        run: Install-Module Pester -Force -Scope CurrentUser -SkipPublisherCheck
-      - name: "[RUNNING] Run Tests"
+      - name: "[RUNNING] Run Pester"
         shell: powershell
         run: |
-          Write-Host "[STIG] Running Pester" -ForegroundColor Cyan
-          $cfg = New-PesterConfiguration; $cfg.Run.Path='.\tests'; $cfg.TestResult.Enabled=$true; $cfg.TestResult.OutputPath='test-results.xml'; $cfg.TestResult.OutputFormat='JUnitXml'; $cfg.CodeCoverage.Enabled=$true; $cfg.CodeCoverage.Path='.\scripts\*.ps1','.\rules\core\*.ps1'; $cfg.Output.Verbosity='Normal'; $r=Invoke-Pester -Configuration $cfg; if($r.FailedCount -gt 0){ Write-Host "[ERROR] Tests failed" -ForegroundColor Red; exit 1 }
+          Install-Module Pester -Force -Scope CurrentUser -SkipPublisherCheck
+          $cfg=New-PesterConfiguration; $cfg.Run.Path='.\tests'; $cfg.Output.Verbosity='Normal'; $cfg.TestResult.Enabled=$true; $cfg.TestResult.OutputPath='test-results.xml'; $cfg.TestResult.OutputFormat='JUnitXml'; $r=Invoke-Pester -Configuration $cfg; if($r.FailedCount -gt 0){ Write-Host "[ERROR] Tests failed" -ForegroundColor Red; exit 1 }
       - name: "[REPORT] Upload Test Results"
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: test-results.xml
-
-  security-scan:
-    name: "[SECURITY] Enhanced Security Analysis"
-    runs-on: windows-latest
-    needs: validate-all
-    steps:
-      - name: "[INFO] Checkout Repository"
-        uses: actions/checkout@v4
-      - name: "[SECURITY] Scan"
+      - name: "[RUNNING] Package (release only)"
+        if: github.event_name == 'release'
         shell: powershell
         run: |
-          Write-Host "[SECURITY] Scan start" -ForegroundColor Cyan
-          $patterns = @{
-            'Invoke-Expression|iex\s'='Dynamic code execution';
-            'DownloadString|DownloadFile'='Web download';
-            'Start-Process.*-WindowStyle\s+Hidden'='Hidden process';
-            'Set-ExecutionPolicy.*Unrestricted'='Unsafe execution policy';
-            'ConvertTo-SecureString.*-AsPlainText.*-Force'='Insecure password handling';
-            'System\\.Runtime\\.InteropServices'='Native interop';
-            'Add-Type.*-TypeDefinition.*\\[DllImport\\]'='PInvoke';
-            'System\\.Net\\.WebClient'='Legacy web client'
-          }
-          $issues=@(); Get-ChildItem -Recurse -Filter *.ps1 | ForEach-Object { $c=Get-Content $_ -Raw -ErrorAction SilentlyContinue; if(-not $c){return}; foreach($k in $patterns.Keys){ if($c -match $k){ $sev = if($k -match 'Invoke-Expression|DownloadString|Hidden'){'High'} else {'Medium'}; $issues += [pscustomobject]@{File=$_.FullName; Issue=$patterns[$k]; Severity=$sev} } } }
-          if($issues){ $issues | ConvertTo-Json | Out-File security-findings.json; $issues | ForEach-Object { $col= if($_.Severity -eq 'High'){'Red'} else {'Yellow'}; Write-Host "  [$($_.Severity)] $($_.File): $($_.Issue)" -ForegroundColor $col }; if($issues | Where-Object Severity -eq 'High'){ Write-Host "[ERROR] High risk issues" -ForegroundColor Red; exit 1 } } else { Write-Host "[SUCCESS] No issues" -ForegroundColor Green }
-      - name: "[REPORT] Upload Security Findings"
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: security-findings
-          path: security-findings.json
-
-  build-package:
-    name: "[RUNNING] Create Release Package"
-    runs-on: windows-latest
-    needs: [validate-all, security-scan]
-    if: github.event_name == 'release'
-    steps:
-      - name: "[INFO] Checkout Repository"
-        uses: actions/checkout@v4
-      - name: "[RUNNING] Create Package"
-        shell: powershell
-        run: |
-          Write-Host "[RUNNING] Packaging" -ForegroundColor Cyan
-          $version='${{ github.ref_name }}'
-          $name="windows-stig-hardening-$version"
-          New-Item -ItemType Directory -Path .\package\$name -Force | Out-Null
-          foreach($i in 'Launch-Assessment.ps1','Launch-Assessment.bat','README.md','LICENSE','config','docs','rules','scripts','templates'){ if(Test-Path $i){ Copy-Item $i -Destination .\package\$name -Recurse -Force }}
-          Compress-Archive -Path .\package\$name\* -DestinationPath .\$name.zip -Force
-          Write-Host "[SUCCESS] Package created: $name.zip" -ForegroundColor Green
-      - name: "[REPORT] Upload Release Package"
+          $version='${{ github.ref_name }}'; $name="windows-stig-hardening-$version"; New-Item -ItemType Directory -Path .\package\$name -Force | Out-Null; foreach($i in 'Launch-Assessment.ps1','Launch-Assessment.bat','README.md','LICENSE','config','docs','rules','scripts','templates'){ if(Test-Path $i){ Copy-Item $i -Destination .\package\$name -Recurse -Force }}; Compress-Archive -Path .\package\$name\* -DestinationPath .\$name.zip -Force; Write-Host "[SUCCESS] Package created: $name.zip" -ForegroundColor Green
+      - name: "[REPORT] Upload Package"
+        if: github.event_name == 'release'
         uses: actions/upload-artifact@v4
         with:
           name: release-package
