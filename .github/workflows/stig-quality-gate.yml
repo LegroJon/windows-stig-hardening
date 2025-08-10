@@ -28,9 +28,7 @@ jobs:
           $validPrefixes = @(
             "[STIG]", "[SUCCESS]", "[ERROR]", "[WARNING]", "[INFO]",
             "[ADMIN]", "[SECURITY]", "[RUNNING]", "[REPORT]", "[SUMMARY]",
-            "[NEXT]", "[MANUAL]", "[RETRY]", "[COMPLETE]", "[ANALYSIS]",
-            "[VALIDATION]", "[STATS]", "[QUICK]", "[COMMENT]", "[BUILD]",
-            "[TESTING]", "[VALIDATOR]", "[SCANNER]"
+            "[NEXT]", "[MANUAL]", "[RETRY]", "[COMPLETE]"
           )
 
           $issuesFound = $false

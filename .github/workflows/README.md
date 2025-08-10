@@ -2,19 +2,19 @@
 
 This directory contains **streamlined** GitHub Actions workflows for automated testing, security analysis, and maintenance of the Windows 11 STIG Assessment Tool.
 
-## 📋 **Optimized Workflow Overview**
+## Optimized Workflow Overview
 
 | Workflow | File | Triggers | Purpose |
 |----------|------|----------|---------|
-| **CI/CD Pipeline** | `ci-cd.yml` | Push, PR, Release | **Complete** build, test, and validation pipeline |
-| **PR Validation** | `pr-validation.yml` | Pull Requests | **Lightweight** PR analysis and draft validation |
-| **Project Stats** | `badges.yml` | Push to main, Manual | **Simple** project statistics collection |
+| **CI/CD Pipeline** | `ci-cd.yml` | Push, PR, Release | Build, test, validation pipeline |
+| **PR Validation** | `pr-validation.yml` | Pull Requests | Lightweight PR analysis and draft validation |
+| **Project Stats** | `badges.yml` | Push to main, Manual | Project statistics collection |
 
 ---
 
-## 🚀 **Main CI/CD Pipeline** (`ci-cd.yml`)
+## Main CI/CD Pipeline (`ci-cd.yml`)
 
-### **Key Optimizations** ✅
+### Key Optimizations
 - **Combined Validation**: Merged syntax, Unicode, and STIG rule validation into single job
 - **Conditional Testing**: Skips tests on release builds for faster packaging
 - **Streamlined Security**: Essential security patterns only
@@ -22,30 +22,30 @@ This directory contains **streamlined** GitHub Actions workflows for automated t
 
 ### **Jobs Overview**
 
-#### 1. **[VALIDATOR] Complete Validation** 
+#### 1. [STIG] Complete Validation
 - ✅ **PowerShell Syntax** - Uses existing `Validate-PowerShellSyntax.ps1`
 - ✅ **Unicode Check** - Built into validation script
 - ✅ **STIG Rule Structure** - Validates function patterns and required properties
 - ✅ **Single Job** - Eliminates redundant checkout and setup steps
 
-#### 2. **[TESTING] Pester Unit Tests**
+#### 2. [STIG] Pester Unit Tests
 - ✅ **Conditional Execution** - Skips on release builds
 - ✅ **Dependency Chain** - Runs only after validation passes
 - ✅ **Artifact Upload** - Test results for analysis
 
-#### 3. **[SECURITY] Security Analysis** 
+#### 3. [SECURITY] Security Analysis
 - ✅ **Essential Patterns Only** - Critical security risks
 - ✅ **Non-Blocking** - Warns without failing build
 
-#### 4. **[BUILD] Release Package**
+#### 4. [RUNNING] Release Package
 - ✅ **Release Triggered Only** - Efficient resource usage
 - ✅ **Streamlined Contents** - Core files only
 
 ---
 
-## 📝 **PR Validation** (`pr-validation.yml`)
+## PR Validation (`pr-validation.yml`)
 
-### **Key Optimizations** ✅
+### Key Optimizations
 - **Draft vs Ready** - Different validation levels for different PR states
 - **Changed Files Only** - Analyzes only modified files
 - **No Redundancy** - Relies on main CI/CD for full validation
@@ -53,30 +53,30 @@ This directory contains **streamlined** GitHub Actions workflows for automated t
 
 ### **Jobs Overview**
 
-#### 1. **[QUICK] Draft PR Check**
+#### 1. [STIG] Draft PR Check
 - ✅ **Minimal Validation** - Quick syntax and Unicode check only
 - ✅ **Fast Feedback** - Helps developers fix issues early
 - ✅ **Draft Only** - Runs only on draft PRs
 
-#### 2. **[REPORT] PR Analysis**
+#### 2. [REPORT] PR Analysis
 - ✅ **Change Statistics** - File counts, line changes, impact analysis
 - ✅ **Smart Comments** - Updates existing bot comments
 - ✅ **Review Checklist** - Automated review guidance
 
 ---
 
-## 📊 **Project Statistics** (`badges.yml`)
+## Project Statistics (`badges.yml`)
 
-### **Key Optimizations** ✅
+### Key Optimizations
 - **Simple Metrics** - Essential project statistics only
 - **No Complex Dependencies** - Self-contained execution
 - **Manual + Automatic** - Triggered on main branch pushes
 
 ---
 
-## 🔥 **Removed Redundancies**
+## Removed Redundancies
 
-### **What Was Eliminated**
+### What Was Eliminated
 - ❌ **`security-check.yml`** - Duplicate security analysis consolidated into main pipeline
 - ❌ **`maintenance.yml`** - Overly complex dependency management (unnecessary for current needs)
 - ❌ **Separate syntax validation jobs** - Combined into single validation step
@@ -84,7 +84,7 @@ This directory contains **streamlined** GitHub Actions workflows for automated t
 - ❌ **Excessive documentation checks** - Simplified to essential files only
 - ❌ **Complex badge generation** - Streamlined to basic project stats
 
-### **Performance Improvements**
+### Performance Improvements
 - ⚡ **60% Fewer Jobs** - From 12 jobs across 4 workflows down to 6 jobs across 3 workflows
 - ⚡ **50% Faster Validation** - Combined validation eliminates redundant file processing
 - ⚡ **Reduced Resource Usage** - Conditional execution prevents unnecessary runs
@@ -92,11 +92,11 @@ This directory contains **streamlined** GitHub Actions workflows for automated t
 
 ---
 
-## 🎯 **Best Practices (Unchanged)**
+## Best Practices (Unchanged)
 
 ### **For Developers**
 
-#### **Before Committing**
+#### Before Committing
 ```powershell
 # Run validation locally (same as CI uses)
 .\scripts\Validate-PowerShellSyntax.ps1 -Path .\rules\core
@@ -106,7 +106,7 @@ This directory contains **streamlined** GitHub Actions workflows for automated t
 .\scripts\Run-Tests.ps1
 ```
 
-#### **STIG Rule Development**
+#### STIG Rule Development
 - ✅ Follow naming: `WN11-XX-000000.ps1`
 - ✅ Implement `Test-[RuleName]` function
 - ✅ Include required properties: `RuleID`, `Status`, `Evidence`, `FixText`
@@ -115,23 +115,23 @@ This directory contains **streamlined** GitHub Actions workflows for automated t
 
 ---
 
-## 🚨 **Troubleshooting (Simplified)**
+## Troubleshooting (Simplified)
 
-### **Most Common Issues**
+### Most Common Issues
 
-#### **PowerShell Syntax Errors**
+#### PowerShell Syntax Errors
 ```
 [ERROR] PowerShell syntax validation failed
 ```
 **Solution**: Run `.\scripts\Validate-PowerShellSyntax.ps1 -Path .` locally
 
-#### **STIG Rule Validation**
+#### STIG Rule Validation
 ```
 [ERROR] Missing Test- function
 ```
 **Solution**: Ensure STIG rules follow the standard format with `Test-` prefix
 
-#### **Draft PR Issues**
+#### Draft PR Issues
 ```
 [ERROR] Unicode characters found
 ```
@@ -139,7 +139,7 @@ This directory contains **streamlined** GitHub Actions workflows for automated t
 
 ---
 
-## 📈 **Key Metrics**
+## Key Metrics
 
 | Metric | Target | Critical |
 |--------|--------|----------|
@@ -149,20 +149,20 @@ This directory contains **streamlined** GitHub Actions workflows for automated t
 
 ---
 
-## 🔮 **Future Enhancements** (Simplified Roadmap)
+## Future Enhancements (Simplified Roadmap)
 
-### **Phase 1** (Current)
+### Phase 1 (Current)
 - ✅ **Streamlined Pipelines** - Essential validation and testing only
 - ✅ **Smart PR Analysis** - Contextual feedback for developers
 
-### **Phase 2** (Future)
+### Phase 2 (Future)
 - 📋 **PowerShell Gallery Publishing** - Automated module releases
 - 📋 **Performance Benchmarking** - Assessment execution time tracking
 - 📋 **Enhanced Security Scanning** - Integration with GitHub Security Advisories
 
 ---
 
-## 📚 **Workflow Files Reference**
+## Workflow Files Reference
 
 ```
 .github/workflows/
@@ -172,14 +172,14 @@ This directory contains **streamlined** GitHub Actions workflows for automated t
 └── README.md           # This documentation
 ```
 
-### **Workflow Dependencies**
+### Workflow Dependencies
 - **Main CI/CD**: Runs on all pushes and PRs - comprehensive validation
 - **PR Validation**: Lightweight analysis - relies on main CI/CD for full testing
 - **Project Stats**: Independent - collects metrics only
 
 ---
 
-## ✅ **Optimization Summary**
+## Optimization Summary
 
 | Before Optimization | After Optimization | Improvement |
 |---------------------|-------------------|-------------|
