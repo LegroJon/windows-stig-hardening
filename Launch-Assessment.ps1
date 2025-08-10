@@ -10,7 +10,7 @@
 .NOTES
     Author: Jonathan Legro
     Version: 1.0.0
-    
+
 .EXAMPLE
     .\Launch-Assessment.ps1
     Launch the quick assessment menu
@@ -20,14 +20,14 @@
 function Test-ExecutionPolicy {
     $currentPolicy = Get-ExecutionPolicy -Scope Process
     $effectivePolicy = Get-ExecutionPolicy
-    
+
     Write-Host "[STIG] Checking PowerShell execution policy..." -ForegroundColor Gray
-    
+
     if ($effectivePolicy -eq "Restricted" -or $effectivePolicy -eq "AllSigned") {
         Write-Host "[WARNING] PowerShell execution policy is restrictive: $effectivePolicy" -ForegroundColor Yellow
         Write-Host "[INFO] This tool requires script execution to perform STIG assessments." -ForegroundColor Gray
-        
-        $response = Read-Host "[PROMPT] Temporarily allow script execution for this session? (y/N)"
+
+    $response = Read-Host "[INFO] Temporarily allow script execution for this session? (y/N)"
         if ($response -eq 'y' -or $response -eq 'Y' -or $response -eq 'yes') {
             try {
                 Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
@@ -43,8 +43,8 @@ function Test-ExecutionPolicy {
         }
         else {
             Write-Host "[INFO] Assessment cancelled. To run manually:" -ForegroundColor Gray
-            Write-Host "       Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force" -ForegroundColor White
-            Write-Host "       .\Launch-Assessment.ps1" -ForegroundColor White
+            Write-Host "[INFO] Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force" -ForegroundColor White
+            Write-Host "[INFO] .\Launch-Assessment.ps1" -ForegroundColor White
             return $false
         }
     }
@@ -56,7 +56,7 @@ function Test-ExecutionPolicy {
 
 # Check execution policy first
 if (-not (Test-ExecutionPolicy)) {
-    Write-Host "`n[EXIT] Execution policy check failed. Assessment tool cannot continue." -ForegroundColor Red
+    Write-Host "`n[ERROR] Execution policy check failed. Assessment tool cannot continue." -ForegroundColor Red
     pause
     exit 1
 }
@@ -71,31 +71,31 @@ if ($adminResult -eq $null) {
     exit 0
 }
 
-Write-Host "`nChoose your launcher:" -ForegroundColor White
-Write-Host "1. Quick Assessment Menu (Recommended)" -ForegroundColor Green
-Write-Host "2. Advanced CLI Tool" -ForegroundColor Yellow
-Write-Host "3. Exit" -ForegroundColor Gray
+Write-Host "`n[INFO] Choose your launcher:" -ForegroundColor White
+Write-Host "[INFO] 1. Quick Assessment Menu (Recommended)" -ForegroundColor Green
+Write-Host "[INFO] 2. Advanced CLI Tool" -ForegroundColor Yellow
+Write-Host "[INFO] 3. Exit" -ForegroundColor Gray
 
 $choice = Read-Host "`nEnter your choice (1-3)"
 
 switch ($choice) {
     "1" {
-        Write-Host "`nLaunching Quick Assessment Menu..." -ForegroundColor Green
+    Write-Host "`n[RUNNING] Launching Quick Assessment Menu..." -ForegroundColor Green
         & ".\scripts\Quick-Assessment.ps1"
     }
     "2" {
-        Write-Host "`nLaunching Advanced CLI Tool..." -ForegroundColor Yellow
-        Write-Host "Usage: .\scripts\Start-STIGAssessment.ps1 [parameters]" -ForegroundColor Gray
-        Write-Host "Run: Get-Help .\scripts\Start-STIGAssessment.ps1 -Detailed" -ForegroundColor Gray
+    Write-Host "`n[RUNNING] Launching Advanced CLI Tool..." -ForegroundColor Yellow
+    Write-Host "[INFO] Usage: .\scripts\Start-STIGAssessment.ps1 [parameters]" -ForegroundColor Gray
+    Write-Host "[INFO] Run: Get-Help .\scripts\Start-STIGAssessment.ps1 -Detailed" -ForegroundColor Gray
         Write-Host ""
         & ".\scripts\Start-STIGAssessment.ps1" -RequestAdmin
     }
     "3" {
-        Write-Host "Goodbye!" -ForegroundColor Gray
+    Write-Host "[INFO] Goodbye!" -ForegroundColor Gray
         exit 0
     }
     default {
-        Write-Host "Invalid choice. Please run the script again." -ForegroundColor Red
+    Write-Host "[WARNING] Invalid choice. Please run the script again." -ForegroundColor Red
         exit 1
     }
 }

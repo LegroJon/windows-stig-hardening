@@ -10,7 +10,7 @@
     .\Create-CoreSTIGRules.ps1
 #>
 
-Write-Host "`nCreating Core Windows 11 STIG Rules" -ForegroundColor Cyan
+Write-Host "`n[STIG] Creating Core Windows 11 STIG Rules" -ForegroundColor Cyan
 Write-Host "=" * 40 -ForegroundColor Cyan
 
 # Define core STIG rules based on common Windows 11 requirements
@@ -79,7 +79,7 @@ foreach ($rule in $coreRules) {
     try {
         # Generate rule script using our existing tool
         $result = & ".\scripts\New-STIGRule.ps1" -RuleID $rule.RuleID -RuleTitle $rule.Title -Category $rule.Category -CheckProcedure $rule.CheckProcedure -FixProcedure $rule.FixProcedure
-        
+
         if ($LASTEXITCODE -eq 0) {
             Write-Host "[SUCCESS] Created: $($rule.RuleID)" -ForegroundColor Green
             $createdCount++
@@ -91,7 +91,7 @@ foreach ($rule in $coreRules) {
 }
 
 Write-Host "`n[SUMMARY] Summary" -ForegroundColor Cyan
-Write-Host "Created $createdCount out of $($coreRules.Count) core STIG rules" -ForegroundColor Green
+Write-Host "[SUMMARY] Created $createdCount out of $($coreRules.Count) core STIG rules" -ForegroundColor Green
 
 Write-Host "`n[NEXT] Next Steps:" -ForegroundColor Yellow
 Write-Host "1. Test the rules: .\scripts\Start-STIGAssessment.ps1" -ForegroundColor Gray

@@ -36,14 +36,14 @@ param(
     [Parameter(Mandatory = $false)]
     [ValidateSet("All", "Unit", "Integration", "Coverage")]
     [string]$TestType = "All",
-    
+
     [Parameter(Mandatory = $false)]
     [ValidateSet("Console", "NUnitXml", "JUnitXml")]
     [string]$OutputFormat = "Console",
-    
+
     [Parameter(Mandatory = $false)]
     [switch]$GenerateCoverage,
-    
+
     [Parameter(Mandatory = $false)]
     [switch]$GenerateReport
 )
@@ -71,7 +71,7 @@ try {
     if (-not $pesterModule -or $pesterModule.Version -lt [Version]"5.0.0") {
         throw "Pester 5.0+ is required. Run .\scripts\Install-TestingTools.ps1 first."
     }
-    Write-Host "[OK] Pester $($pesterModule.Version) found" -ForegroundColor Green
+    Write-Host "[SUCCESS] Pester $($pesterModule.Version) found" -ForegroundColor Green
 }
 catch {
     Write-Host "[ERROR] $($_.Exception.Message)" -ForegroundColor Red
@@ -112,14 +112,14 @@ if ($GenerateCoverage -or $TestType -eq "Coverage") {
     $pesterConfig.CodeCoverage.Enabled = $true
     $pesterConfig.CodeCoverage.OutputPath = Join-Path $resultsPath "Coverage.xml"
     $pesterConfig.CodeCoverage.OutputFormat = "JaCoCo"
-    
+
     # Include all PowerShell files except tests
     $pesterConfig.CodeCoverage.Path = @(
         ".\rules\core\*.ps1",
         ".\rules\custom\*.ps1",
         ".\scripts\*.ps1"
     )
-    
+
     Write-Host "[INFO] Code coverage enabled" -ForegroundColor Green
 }
 
@@ -170,31 +170,31 @@ foreach ($path in $testPaths) {
 # Run the tests
 try {
     $testResults = Invoke-Pester -Configuration $pesterConfig
-    
+
     # Display results summary
     Write-Host "`nTest Results Summary" -ForegroundColor Cyan
     Write-Host "=" * 60 -ForegroundColor Cyan
-    
+
     $endTime = Get-Date
     $duration = $endTime - $startTime
-    
+
     Write-Host "Execution Time: $($duration.ToString('mm\:ss\.fff'))" -ForegroundColor White
     Write-Host "Total Tests: $($testResults.TotalCount)" -ForegroundColor White
     Write-Host "Passed: $($testResults.PassedCount)" -ForegroundColor Green
     Write-Host "Failed: $($testResults.FailedCount)" -ForegroundColor $(if ($testResults.FailedCount -gt 0) { "Red" } else { "Green" })
     Write-Host "Skipped: $($testResults.SkippedCount)" -ForegroundColor Yellow
-    
+
     if ($testResults.CodeCoverage) {
         $coveragePercent = [math]::Round(($testResults.CodeCoverage.NumberOfCommandsExecuted / $testResults.CodeCoverage.NumberOfCommandsAnalyzed) * 100, 2)
         Write-Host "Code Coverage: $coveragePercent%" -ForegroundColor $(if ($coveragePercent -ge 80) { "Green" } else { "Yellow" })
     }
-    
+
     # Generate HTML report if requested
     if ($GenerateReport) {
         Write-Host "`nGenerating HTML Report..." -ForegroundColor Yellow
-        
+
         $htmlReportPath = Join-Path $resultsPath "TestReport.html"
-        
+
         # Simple HTML report
         $htmlContent = @"
 <!DOCTYPE html>
@@ -215,7 +215,7 @@ try {
         <h1>Windows 11 STIG Assessment Tool - Test Results</h1>
         <p>Generated: $($endTime.ToString('yyyy-MM-dd HH:mm:ss'))</p>
     </div>
-    
+
     <div class="summary">
         <h2>Test Summary</h2>
         <p><strong>Execution Time:</strong> $($duration.ToString('mm\:ss\.fff'))</p>
@@ -225,7 +225,7 @@ try {
         <p><strong>Skipped:</strong> <span class="skipped">$($testResults.SkippedCount)</span></p>
         $(if ($testResults.CodeCoverage) { "<p><strong>Code Coverage:</strong> $coveragePercent%</p>" })
     </div>
-    
+
     <div class="details">
         <h2>Test Files Executed</h2>
         <ul>
@@ -235,18 +235,18 @@ try {
 </body>
 </html>
 "@
-        
+
         $htmlContent | Out-File -FilePath $htmlReportPath -Encoding UTF8
-        Write-Host "[OK] HTML report generated: $htmlReportPath" -ForegroundColor Green
+    Write-Host "[SUCCESS] HTML report generated: $htmlReportPath" -ForegroundColor Green
     }
-    
+
     # Exit with appropriate code
     if ($testResults.FailedCount -gt 0) {
-        Write-Host "`n[FAIL] Some tests failed" -ForegroundColor Red
+    Write-Host "`n[ERROR] Some tests failed" -ForegroundColor Red
         exit 1
     }
     else {
-        Write-Host "`n[PASS] All tests passed!" -ForegroundColor Green
+    Write-Host "`n[SUCCESS] All tests passed!" -ForegroundColor Green
         exit 0
     }
 }

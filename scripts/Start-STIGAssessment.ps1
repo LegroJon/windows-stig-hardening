@@ -1380,7 +1380,7 @@ try {
     $executionPolicyOK = & "$PSScriptRoot\Test-ExecutionPolicy.ps1" -Silent
     if (-not $executionPolicyOK) {
         Write-Host "[ERROR] PowerShell execution policy prevents script execution" -ForegroundColor Red
-        Write-Host "[SOLUTION] Run this command first:" -ForegroundColor Yellow
+    Write-Host "[NEXT] Run this command first:" -ForegroundColor Yellow
         Write-Host "           Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force" -ForegroundColor White
         Write-Host "[INFO] This temporarily allows scripts for the current PowerShell session only" -ForegroundColor Gray
         exit 1
@@ -1467,7 +1467,7 @@ try {
         $script:Config.reporting.export_formats
     }
 
-    Write-Host "`n[REPORTS] Generating Reports..." -ForegroundColor Cyan
+    Write-Host "`n[REPORT] Generating Reports..." -ForegroundColor Cyan
 
     foreach ($reportFormat in $reportFormats) {
         try {

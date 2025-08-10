@@ -25,45 +25,46 @@
 param(
     [Parameter(Mandatory = $false)]
     [string]$Path = ".",
-    
+
     [Parameter(Mandatory = $false)]
     [switch]$Fix
 )
 
 # Define problematic Unicode characters and their replacements
 $UnicodeReplacements = @{
-    "[UNICODE-SHIELD]" = "[STIG]"
-    "[UNICODE-CHECK]" = "[SUCCESS]"
-    "[UNICODE-X]" = "[ERROR]"
-    "[UNICODE-WARNING]" = "[WARNING]"
-    "[UNICODE-CHART]" = "[REPORT]"
-    "[UNICODE-ROCKET]" = "[RUNNING]"
-    "[UNICODE-FOLDER]" = "[FOLDER]"
-    "[UNICODE-TARGET]" = "[TARGET]"
-    "[UNICODE-LIGHTNING]" = "[QUICK]"
-    "[UNICODE-CLIPBOARD]" = "[ALL]"
-    "[UNICODE-GRAPH]" = "[CSV]"
-    "[UNICODE-WRENCH]" = "[JSON]"
-    "[UNICODE-WAVE]" = "[EXIT]"
-    "[UNICODE-PAGE]" = "[FILE]"
+    "[UNICODE-SHIELD]"    = "[STIG]"
+    "[UNICODE-CHECK]"     = "[SUCCESS]"
+    "[UNICODE-X]"         = "[ERROR]"
+    "[UNICODE-WARNING]"   = "[WARNING]"
+    "[UNICODE-CHART]"     = "[REPORT]"
+    "[UNICODE-ROCKET]"    = "[RUNNING]"
+    # Deprecated targets below mapped to nearest approved prefix or neutral [INFO]
+    "[UNICODE-LIGHTNING]" = "[RUNNING]"   # formerly QUICK
+    "[UNICODE-CLIPBOARD]" = "[REPORT]"    # formerly ALL
+    "[UNICODE-GRAPH]"     = "[REPORT]"    # formerly CSV
+    "[UNICODE-WRENCH]"    = "[INFO]"      # formerly JSON
+    "[UNICODE-WAVE]"      = "[INFO]"      # formerly EXIT
+    "[UNICODE-FOLDER]"    = "[INFO]"
+    "[UNICODE-TARGET]"    = "[INFO]"
+    "[UNICODE-PAGE]"      = "[INFO]"
 }
 
 function Test-PowerShellSyntax {
     param([string]$FilePath)
-    
+
     try {
         # Parse the PowerShell script
         $tokens = $null
         $errors = $null
         $ast = [System.Management.Automation.Language.Parser]::ParseFile($FilePath, [ref]$tokens, [ref]$errors)
-        
+
         if ($errors.Count -gt 0) {
             return @{
                 Valid = $false
                 Errors = $errors
             }
         }
-        
+
         return @{
             Valid = $true
             Errors = @()
@@ -79,10 +80,10 @@ function Test-PowerShellSyntax {
 
 function Find-UnicodeCharacters {
     param([string]$FilePath)
-    
+
     $content = Get-Content $FilePath -Raw -Encoding UTF8
     $issues = @()
-    
+
     foreach ($unicode in $UnicodeReplacements.Keys) {
         if ($content.Contains($unicode)) {
             $issues += @{
@@ -92,7 +93,7 @@ function Find-UnicodeCharacters {
             }
         }
     }
-    
+
     return $issues
 }
 
@@ -101,10 +102,10 @@ function Fix-UnicodeCharacters {
         [string]$FilePath,
         [array]$Issues
     )
-    
+
     $content = Get-Content $FilePath -Raw -Encoding UTF8
     $modified = $false
-    
+
     foreach ($issue in $Issues) {
         if ($content.Contains($issue.Character)) {
             $content = $content.Replace($issue.Character, $issue.Replacement)
@@ -112,7 +113,7 @@ function Fix-UnicodeCharacters {
             Write-Host "  Fixed: $($issue.Character) -> $($issue.Replacement)" -ForegroundColor Green
         }
     }
-    
+
     if ($modified) {
         Set-Content -Path $FilePath -Value $content -Encoding UTF8
         Write-Host "  File updated: $FilePath" -ForegroundColor Cyan
@@ -120,7 +121,7 @@ function Fix-UnicodeCharacters {
 }
 
 # Main execution
-Write-Host "[VALIDATOR] PowerShell Script Unicode Validator" -ForegroundColor Cyan
+Write-Host "[STIG] PowerShell Script Unicode Validator" -ForegroundColor Cyan
 Write-Host "=" * 50 -ForegroundColor Cyan
 
 # Find all PowerShell files
@@ -137,30 +138,30 @@ $totalIssues = 0
 $filesWithIssues = 0
 
 foreach ($file in $psFiles) {
-    Write-Host "`n[SCANNING] $($file.Name)" -ForegroundColor White
-    
+    Write-Host "`n[RUNNING] Scanning $($file.Name)" -ForegroundColor White
+
     # Check for Unicode characters
     $unicodeIssues = Find-UnicodeCharacters -FilePath $file.FullName
-    
+
     if ($unicodeIssues.Count -gt 0) {
         $filesWithIssues++
         $totalIssues += $unicodeIssues.Count
-        
+
         Write-Host "  [WARNING] Found $($unicodeIssues.Count) Unicode character(s)" -ForegroundColor Yellow
-        
+
         foreach ($issue in $unicodeIssues) {
             Write-Host "    - '$($issue.Character)' should be '$($issue.Replacement)'" -ForegroundColor Red
         }
-        
+
         if ($Fix) {
-            Write-Host "  [FIXING] Applying automatic fixes..." -ForegroundColor Cyan
+            Write-Host "  [RUNNING] Applying automatic fixes..." -ForegroundColor Cyan
             Fix-UnicodeCharacters -FilePath $file.FullName -Issues $unicodeIssues
         }
     }
-    
+
     # Test PowerShell syntax
     $syntaxResult = Test-PowerShellSyntax -FilePath $file.FullName
-    
+
     if (-not $syntaxResult.Valid) {
         Write-Host "  [ERROR] PowerShell syntax errors found:" -ForegroundColor Red
         foreach ($error in $syntaxResult.Errors) {
@@ -180,7 +181,7 @@ Write-Host "Files with Unicode issues: $filesWithIssues" -ForegroundColor $(if (
 Write-Host "Total Unicode issues: $totalIssues" -ForegroundColor $(if ($totalIssues -gt 0) { "Red" } else { "Green" })
 
 if ($totalIssues -gt 0 -and -not $Fix) {
-    Write-Host "`n[TIP] Run with -Fix parameter to automatically resolve Unicode issues" -ForegroundColor Cyan
+    Write-Host "`n[NEXT] Run with -Fix parameter to automatically resolve Unicode issues" -ForegroundColor Cyan
 }
 
 if ($totalIssues -eq 0) {

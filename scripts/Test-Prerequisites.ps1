@@ -29,10 +29,10 @@ function Write-CheckResult {
         [bool]$Passed,
         [string]$Details = ""
     )
-    
-    $status = if ($Passed) { "[PASS]" } else { "[FAIL]" }
+
+    $status = if ($Passed) { "[SUCCESS]" } else { "[ERROR]" }
     $color = if ($Passed) { "Green" } else { "Red" }
-    
+
     Write-Host "$status $Check" -ForegroundColor $color
     if ($Details) {
         Write-Host "   $Details" -ForegroundColor Gray
@@ -71,25 +71,25 @@ Write-CheckResult "Pester Module (Optional)" $hasPester $(if ($hasPester) { "Ver
 if ($Detailed) {
     Write-Host "`nDetailed System Information" -ForegroundColor Cyan
     Write-Host "=" * 60 -ForegroundColor Cyan
-    
+
     Write-Host "OS Version:        " -NoNewline -ForegroundColor White
     Write-Host "$($osInfo.Caption) $($osInfo.Version)" -ForegroundColor Green
-    
+
     Write-Host "OS Architecture:   " -NoNewline -ForegroundColor White
     Write-Host $osInfo.OSArchitecture -ForegroundColor Green
-    
+
     Write-Host "PowerShell:        " -NoNewline -ForegroundColor White
     Write-Host "$($PSVersionTable.PSVersion) ($($PSVersionTable.PSEdition))" -ForegroundColor Green
-    
+
     Write-Host "Computer Name:     " -NoNewline -ForegroundColor White
     Write-Host $env:COMPUTERNAME -ForegroundColor Green
-    
+
     Write-Host "Domain:            " -NoNewline -ForegroundColor White
     Write-Host $(if ($env:USERDOMAIN -ne $env:COMPUTERNAME) { $env:USERDOMAIN } else { "Workgroup" }) -ForegroundColor Green
-    
+
     Write-Host "Current User:      " -NoNewline -ForegroundColor White
     Write-Host "$env:USERDOMAIN\$env:USERNAME" -ForegroundColor Green
-    
+
     # Check available disk space
     $systemDrive = Get-CimInstance -ClassName Win32_LogicalDisk | Where-Object { $_.DeviceID -eq $env:SystemDrive }
     $freeSpaceGB = [math]::Round($systemDrive.FreeSpace / 1GB, 2)
@@ -106,10 +106,10 @@ Write-Host "`nOverall Status" -ForegroundColor Cyan
 Write-Host "=" * 60 -ForegroundColor Cyan
 
 if ($passedChecks -eq $totalChecks) {
-    Write-Host "[PASS] All prerequisites met! Ready to run STIG assessment." -ForegroundColor Green
+    Write-Host "[SUCCESS] All prerequisites met! Ready to run STIG assessment." -ForegroundColor Green
     exit 0
 } else {
-    Write-Host "[FAIL] $($totalChecks - $passedChecks) of $totalChecks checks failed." -ForegroundColor Red
+    Write-Host "[ERROR] $($totalChecks - $passedChecks) of $totalChecks checks failed." -ForegroundColor Red
     Write-Host "Please resolve the issues above before running the assessment." -ForegroundColor Yellow
     exit 1
 }

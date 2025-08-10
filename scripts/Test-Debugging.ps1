@@ -16,20 +16,20 @@ $debugVariables = @{
     Timestamp = Get-Date
 }
 
-Write-Host "[DEBUG] Debug variables initialized" -ForegroundColor Gray
+Write-Host "[INFO] Debug variables initialized" -ForegroundColor Gray
 if ($Verbose) {
-    Write-Host "[VERBOSE] Variables: $($debugVariables | ConvertTo-Json -Compress)" -ForegroundColor Yellow
+    Write-Host "[INFO] Variables: $($debugVariables | ConvertTo-Json -Compress)" -ForegroundColor Yellow
 }
 
 # Test 2: Function call debugging
 function Test-DebugFunction {
     param([string]$Message)
-    
-    Write-Host "[DEBUG] Function called with message: $Message" -ForegroundColor Green
-    
+
+    Write-Host "[INFO] Function called with message: $Message" -ForegroundColor Green
+
     # Simulate some processing
     Start-Sleep -Milliseconds 500
-    
+
     return @{
         Status = "Success"
         ProcessedMessage = $Message.ToUpper()
@@ -43,7 +43,7 @@ $result = Test-DebugFunction -Message "Hello from debugger"
 
 # Test 4: Error handling debugging
 try {
-    Write-Host "[DEBUG] Testing error handling..." -ForegroundColor Magenta
+    Write-Host "[RUNNING] Testing error handling..." -ForegroundColor Magenta
     if ($TestType -eq "Error") {
         throw "Intentional error for debugging demonstration"
     }
@@ -60,7 +60,7 @@ $templateData = @{
     RuleCount = 12
 }
 
-Write-Host "[DEBUG] Template data prepared for debugging:" -ForegroundColor Cyan
+Write-Host "[INFO] Template data prepared for debugging:" -ForegroundColor Cyan
 Write-Host "  Assessment: $($templateData.AssessmentName)" -ForegroundColor White
 Write-Host "  Compliance: $($templateData.CompliancePercentage)%" -ForegroundColor White
 Write-Host "  Rules: $($templateData.RuleCount)" -ForegroundColor White
@@ -68,9 +68,9 @@ Write-Host "  Rules: $($templateData.RuleCount)" -ForegroundColor White
 # Test 6: Configuration debugging
 $configPath = "config\settings.json"
 if (Test-Path $configPath) {
-    Write-Host "[DEBUG] Configuration file found: $configPath" -ForegroundColor Green
+    Write-Host "[INFO] Configuration file found: $configPath" -ForegroundColor Green
     $config = Get-Content $configPath | ConvertFrom-Json
-    Write-Host "[DEBUG] Config loaded with $($config.PSObject.Properties.Count) properties" -ForegroundColor Green
+    Write-Host "[INFO] Config loaded with $($config.PSObject.Properties.Count) properties" -ForegroundColor Green
 } else {
     Write-Host "[WARN] Configuration file not found: $configPath" -ForegroundColor Yellow
 }

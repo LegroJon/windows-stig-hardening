@@ -20,65 +20,65 @@ if (-not $isAdmin) {
     Write-Host ""
 }
 
-Write-Host "Choose your assessment options:" -ForegroundColor White
+Write-Host "[INFO] Choose your assessment options:" -ForegroundColor White
 Write-Host ""
-Write-Host "1. [HTML] Generate HTML Report Only" -ForegroundColor Green
+Write-Host "[INFO] 1. HTML - Generate HTML Report Only" -ForegroundColor Green
 Write-Host "   Professional web-based report for viewing and sharing"
 Write-Host ""
-Write-Host "2. [CSV] Generate CSV Report Only" -ForegroundColor Green  
+Write-Host "[INFO] 2. CSV - Generate CSV Report Only" -ForegroundColor Green
 Write-Host "   Spreadsheet format for data analysis"
 Write-Host ""
-Write-Host "3. [JSON] Generate JSON Report Only" -ForegroundColor Green
+Write-Host "[INFO] 3. JSON - Generate JSON Report Only" -ForegroundColor Green
 Write-Host "   Technical format for automation and integration"
 Write-Host ""
-Write-Host "4. [ALL] Generate ALL Report Formats" -ForegroundColor Cyan
+Write-Host "[INFO] 4. ALL - Generate ALL Report Formats" -ForegroundColor Cyan
 Write-Host "   HTML, CSV, and JSON reports"
 Write-Host ""
-Write-Host "5. [QUICK] Quick Assessment (JSON only)" -ForegroundColor Yellow
+Write-Host "[INFO] 5. QUICK - Quick Assessment (JSON only)" -ForegroundColor Yellow
 Write-Host "   Fast scan with basic JSON output"
 Write-Host ""
-Write-Host "6. [CRITICAL] Filter Critical Rules Only (CAT I)" -ForegroundColor Red
+Write-Host "[INFO] 6. CRITICAL - Filter Critical Rules Only (CAT I)" -ForegroundColor Red
 Write-Host "   Test only the most critical security requirements"
 Write-Host ""
-Write-Host "0. [EXIT] Exit" -ForegroundColor Gray
+Write-Host "[INFO] 0. EXIT" -ForegroundColor Gray
 Write-Host ""
 
 do {
     $choice = Read-Host "Enter your choice (0-6)"
-    
+
     switch ($choice) {
         "1" {
-            Write-Host "[HTML] Running assessment with HTML report..." -ForegroundColor Green
+            Write-Host "[RUNNING] HTML assessment with HTML report..." -ForegroundColor Green
             .\scripts\Start-STIGAssessment.ps1 -Format HTML -RequestAdmin
             break
         }
         "2" {
-            Write-Host "[CSV] Running assessment with CSV report..." -ForegroundColor Green
+            Write-Host "[RUNNING] CSV assessment with CSV report..." -ForegroundColor Green
             .\scripts\Start-STIGAssessment.ps1 -Format CSV -RequestAdmin
             break
         }
         "3" {
-            Write-Host "[JSON] Running assessment with JSON report..." -ForegroundColor Green
+            Write-Host "[RUNNING] JSON assessment with JSON report..." -ForegroundColor Green
             .\scripts\Start-STIGAssessment.ps1 -Format JSON -RequestAdmin
             break
         }
         "4" {
-            Write-Host "[ALL] Running assessment with ALL report formats..." -ForegroundColor Cyan
+            Write-Host "[RUNNING] Assessment with ALL report formats..." -ForegroundColor Cyan
             .\scripts\Start-STIGAssessment.ps1 -Format ALL -RequestAdmin
             break
         }
         "5" {
-            Write-Host "[QUICK] Running quick assessment..." -ForegroundColor Yellow
+            Write-Host "[RUNNING] Quick assessment..." -ForegroundColor Yellow
             .\scripts\Start-STIGAssessment.ps1
             break
         }
         "6" {
-            Write-Host "[CRITICAL] Running critical rules assessment..." -ForegroundColor Red
+            Write-Host "[RUNNING] Critical rules assessment..." -ForegroundColor Red
             .\scripts\Start-STIGAssessment.ps1 -RuleFilter "CAT I" -Format HTML -RequestAdmin
             break
         }
         "0" {
-            Write-Host "[EXIT] Goodbye!" -ForegroundColor Gray
+            Write-Host "[INFO] Goodbye!" -ForegroundColor Gray
             exit 0
         }
         default {
@@ -89,7 +89,7 @@ do {
 
 # After assessment completes
 Write-Host ""
-Write-Host "[REPORTS] Check the 'reports' folder for your generated files!" -ForegroundColor Green
+Write-Host "[REPORT] Check the 'reports' folder for your generated files!" -ForegroundColor Green
 Write-Host ""
 
 # Ask if they want to open the reports folder

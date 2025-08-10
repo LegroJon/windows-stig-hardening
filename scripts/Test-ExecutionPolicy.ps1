@@ -16,7 +16,7 @@
 .NOTES
     Author: Jonathan Legro
     Version: 1.0.0
-    
+
 .EXAMPLE
     .\Test-ExecutionPolicy.ps1
     Check execution policy with user interaction
@@ -34,7 +34,7 @@
 param(
     [Parameter(Mandatory = $false)]
     [switch]$AutoFix,
-    
+
     [Parameter(Mandatory = $false)]
     [switch]$Silent
 )
@@ -44,32 +44,32 @@ function Test-ExecutionPolicyCompliance {
         [bool]$AutoFix = $false,
         [bool]$Silent = $false
     )
-    
+
     $currentPolicy = Get-ExecutionPolicy -Scope Process
     $effectivePolicy = Get-ExecutionPolicy
-    
+
     if (-not $Silent) {
         Write-Host "[STIG] Checking PowerShell execution policy..." -ForegroundColor Gray
         Write-Host "[INFO] Current policy: $effectivePolicy (Process: $currentPolicy)" -ForegroundColor Gray
     }
-    
+
     # Check if policy allows script execution
     $restrictivePolicies = @("Restricted", "AllSigned")
     $needsFix = $effectivePolicy -in $restrictivePolicies
-    
+
     if (-not $needsFix) {
         if (-not $Silent) {
             Write-Host "[SUCCESS] Execution policy allows script execution: $effectivePolicy" -ForegroundColor Green
         }
         return $true
     }
-    
+
     # Policy is restrictive - needs fixing
     if (-not $Silent) {
         Write-Host "[WARNING] PowerShell execution policy is restrictive: $effectivePolicy" -ForegroundColor Yellow
         Write-Host "[INFO] STIG assessment tools require script execution capability" -ForegroundColor Gray
     }
-    
+
     if ($AutoFix) {
         try {
             Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
@@ -87,17 +87,17 @@ function Test-ExecutionPolicyCompliance {
             return $false
         }
     }
-    
+
     # Interactive mode - ask user
     if (-not $Silent) {
         Write-Host "`n[SECURITY] The tool needs to temporarily modify execution policy for this session." -ForegroundColor Cyan
-        Write-Host "[DETAILS] This will:" -ForegroundColor Gray
+    Write-Host "[INFO] This will:" -ForegroundColor Gray
         Write-Host "          • Allow PowerShell scripts to run in THIS session only" -ForegroundColor Gray
         Write-Host "          • NOT affect system-wide security settings" -ForegroundColor Gray
         Write-Host "          • Revert automatically when PowerShell closes" -ForegroundColor Gray
-        
-        $response = Read-Host "`n[PROMPT] Allow temporary script execution for STIG assessment? (y/N)"
-        
+
+    $response = Read-Host "`n[INFO] Allow temporary script execution for STIG assessment? (y/N)"
+
         if ($response -eq 'y' -or $response -eq 'Y' -or $response -eq 'yes' -or $response -eq 'YES') {
             try {
                 Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
@@ -107,7 +107,7 @@ function Test-ExecutionPolicyCompliance {
             }
             catch {
                 Write-Host "[ERROR] Failed to modify execution policy: $($_.Exception.Message)" -ForegroundColor Red
-                Write-Host "[TROUBLESHOOTING] Try these solutions:" -ForegroundColor Yellow
+                Write-Host "[NEXT] Try these solutions:" -ForegroundColor Yellow
                 Write-Host "                  1. Run PowerShell as Administrator" -ForegroundColor White
                 Write-Host "                  2. Run: Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force" -ForegroundColor White
                 Write-Host "                  3. Contact your system administrator" -ForegroundColor White
@@ -122,7 +122,7 @@ function Test-ExecutionPolicyCompliance {
             return $false
         }
     }
-    
+
     return $false
 }
 
