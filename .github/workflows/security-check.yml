@@ -1,0 +1,296 @@
+name: "[SECURITY] Security Compliance Check"
+
+on:
+  schedule:
+    # Run weekly security checks on Sundays at 2 AM UTC
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+    # Allow manual triggering
+  push:
+    branches: [ main ]
+    paths:
+      - 'rules/**'
+      - 'scripts/**'
+
+env:
+  POWERSHELL_TELEMETRY_OPTOUT: 1
+
+jobs:
+  # Advanced Security Analysis
+  security-analysis:
+    name: "[SECURITY] Advanced Security Analysis"
+    runs-on: windows-latest
+    
+    steps:
+    - name: "[INFO] Checkout Repository"
+      uses: actions/checkout@v4
+      
+    - name: "[SECURITY] PowerShell Security Best Practices Check"
+      shell: powershell
+      run: |
+        Write-Host "[SECURITY] Advanced Security Analysis" -ForegroundColor Cyan
+        
+        $securityReport = @{
+          HighRisk = @()
+          MediumRisk = @()
+          LowRisk = @()
+          Compliant = @()
+        }
+        
+        $scriptFiles = Get-ChildItem -Recurse -Filter "*.ps1"
+        
+        foreach ($file in $scriptFiles) {
+          Write-Host "[SCANNING] $($file.Name)" -ForegroundColor Yellow
+          $content = Get-Content $file.FullName -Raw
+          
+          # High-risk patterns
+          $highRiskPatterns = @{
+            'Invoke-Expression|iex ' = 'Dynamic code execution'
+            'DownloadString|DownloadFile' = 'Web content download'
+            'Start-Process.*-WindowStyle Hidden' = 'Hidden process execution'
+            'Set-ExecutionPolicy.*Unrestricted' = 'Unsafe execution policy'
+            'System\.Reflection\.Assembly::Load' = 'Assembly loading'
+            'Add-Type.*-TypeDefinition.*using System\.Runtime\.InteropServices' = 'P/Invoke usage'
+          }
+          
+          # Medium-risk patterns
+          $mediumRiskPatterns = @{
+            'Get-Credential' = 'Credential handling'
+            'ConvertTo-SecureString.*-AsPlainText' = 'Plain text password conversion'
+            'Write-Host.*-NoNewline' = 'Potential information disclosure'
+            'Start-Sleep.*[6-9]\d{3}|[1-9]\d{4}' = 'Long sleep periods'
+          }
+          
+          # Low-risk patterns (informational)
+          $lowRiskPatterns = @{
+            'Write-Debug|Write-Verbose' = 'Debug information'
+            'Test-Path.*-PathType Container' = 'Directory enumeration'
+            'Get-ChildItem.*-Recurse' = 'Recursive file operations'
+          }
+          
+          # Check patterns
+          foreach ($pattern in $highRiskPatterns.Keys) {
+            if ($content -match $pattern) {
+              $securityReport.HighRisk += "$($file.Name): $($highRiskPatterns[$pattern])"
+            }
+          }
+          
+          foreach ($pattern in $mediumRiskPatterns.Keys) {
+            if ($content -match $pattern) {
+              $securityReport.MediumRisk += "$($file.Name): $($mediumRiskPatterns[$pattern])"
+            }
+          }
+          
+          foreach ($pattern in $lowRiskPatterns.Keys) {
+            if ($content -match $pattern) {
+              $securityReport.LowRisk += "$($file.Name): $($lowRiskPatterns[$pattern])"
+            }
+          }
+          
+          # Check for security best practices
+          if ($content -match 'try\s*\{.*\}\s*catch' -and $content -match '\[Parameter\(.*Mandatory') {
+            $securityReport.Compliant += "$($file.Name): Proper error handling and parameters"
+          }
+        }
+        
+        # Generate security report
+        Write-Host "[REPORT] Security Analysis Results:" -ForegroundColor Cyan
+        Write-Host "= * 60" -ForegroundColor Gray
+        
+        if ($securityReport.HighRisk.Count -gt 0) {
+          Write-Host "[CRITICAL] High-Risk Issues ($($securityReport.HighRisk.Count)):" -ForegroundColor Red
+          $securityReport.HighRisk | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+        }
+        
+        if ($securityReport.MediumRisk.Count -gt 0) {
+          Write-Host "[WARNING] Medium-Risk Issues ($($securityReport.MediumRisk.Count)):" -ForegroundColor Yellow
+          $securityReport.MediumRisk | ForEach-Object { Write-Host "  $_" -ForegroundColor Yellow }
+        }
+        
+        if ($securityReport.LowRisk.Count -gt 0) {
+          Write-Host "[INFO] Low-Risk Issues ($($securityReport.LowRisk.Count)):" -ForegroundColor Blue
+          $securityReport.LowRisk | ForEach-Object { Write-Host "  $_" -ForegroundColor Blue }
+        }
+        
+        if ($securityReport.Compliant.Count -gt 0) {
+          Write-Host "[SUCCESS] Security Best Practices ($($securityReport.Compliant.Count)):" -ForegroundColor Green
+          $securityReport.Compliant | ForEach-Object { Write-Host "  $_" -ForegroundColor Green }
+        }
+        
+        Write-Host "= * 60" -ForegroundColor Gray
+        
+        # Fail if high-risk issues found
+        if ($securityReport.HighRisk.Count -gt 0) {
+          Write-Host "[ERROR] Build failed due to high-risk security issues" -ForegroundColor Red
+          exit 1
+        } else {
+          Write-Host "[SUCCESS] No high-risk security issues detected" -ForegroundColor Green
+        }
+
+  # STIG Compliance Validation
+  stig-compliance:
+    name: "[STIG] STIG Compliance Validation"
+    runs-on: windows-latest
+    
+    steps:
+    - name: "[INFO] Checkout Repository"
+      uses: actions/checkout@v4
+      
+    - name: "[STIG] Validate STIG Implementation Standards"
+      shell: powershell
+      run: |
+        Write-Host "[STIG] STIG Implementation Standards Check" -ForegroundColor Cyan
+        
+        $stigRules = Get-ChildItem -Path ".\rules\core" -Filter "WN11-*.ps1"
+        $complianceIssues = @()
+        $validRules = 0
+        
+        foreach ($rule in $stigRules) {
+          Write-Host "[SCANNING] $($rule.Name)" -ForegroundColor Yellow
+          $content = Get-Content $rule.FullName -Raw
+          
+          # Check STIG rule naming convention
+          if ($rule.Name -notmatch '^WN11-[A-Z]{2}-\d{6}\.ps1$') {
+            $complianceIssues += "$($rule.Name): Invalid STIG rule naming convention"
+            continue
+          }
+          
+          # Check function naming
+          $functionMatch = [regex]::Match($content, 'function (Test-\w+)')
+          if (-not $functionMatch.Success) {
+            $complianceIssues += "$($rule.Name): Missing or invalid Test- function"
+            continue
+          }
+          
+          # Check required return structure
+          $requiredFields = @('RuleID', 'Status', 'Evidence', 'FixText')
+          $missingFields = @()
+          foreach ($field in $requiredFields) {
+            if ($content -notmatch "$field\s*=") {
+              $missingFields += $field
+            }
+          }
+          
+          if ($missingFields.Count -gt 0) {
+            $complianceIssues += "$($rule.Name): Missing required fields: $($missingFields -join ', ')"
+            continue
+          }
+          
+          # Check for proper status values
+          if ($content -notmatch 'Status.*=.*("Compliant"|"Non-Compliant"|"Error")') {
+            $complianceIssues += "$($rule.Name): Invalid Status value format"
+            continue
+          }
+          
+          # Check for proper error handling
+          if ($content -notmatch 'try\s*\{.*\}\s*catch|trap\s*\{') {
+            $complianceIssues += "$($rule.Name): Missing error handling"
+            continue
+          }
+          
+          $validRules++
+        }
+        
+        Write-Host "[REPORT] STIG Compliance Results:" -ForegroundColor Cyan
+        Write-Host "= * 50" -ForegroundColor Gray
+        Write-Host "[INFO] Total Rules: $($stigRules.Count)" -ForegroundColor White
+        Write-Host "[SUCCESS] Valid Rules: $validRules" -ForegroundColor Green
+        Write-Host "[ERROR] Issues Found: $($complianceIssues.Count)" -ForegroundColor $(if($complianceIssues.Count -gt 0){'Red'}else{'Green'})
+        
+        if ($complianceIssues.Count -gt 0) {
+          Write-Host "[DETAILS] Compliance Issues:" -ForegroundColor Red
+          $complianceIssues | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+          Write-Host "= * 50" -ForegroundColor Gray
+          Write-Host "[ERROR] STIG compliance validation failed" -ForegroundColor Red
+          exit 1
+        } else {
+          Write-Host "= * 50" -ForegroundColor Gray
+          Write-Host "[SUCCESS] All STIG rules meet compliance standards" -ForegroundColor Green
+        }
+
+  # Performance and Quality Metrics
+  quality-metrics:
+    name: "[QUALITY] Code Quality Metrics"
+    runs-on: windows-latest
+    
+    steps:
+    - name: "[INFO] Checkout Repository"
+      uses: actions/checkout@v4
+      
+    - name: "[QUALITY] Generate Quality Metrics"
+      shell: powershell
+      run: |
+        Write-Host "[QUALITY] Code Quality Analysis" -ForegroundColor Cyan
+        
+        # Analyze PowerShell scripts
+        $scriptFiles = Get-ChildItem -Recurse -Filter "*.ps1"
+        $totalLines = 0
+        $totalFunctions = 0
+        $totalFiles = $scriptFiles.Count
+        $complexityScore = 0
+        
+        $qualityMetrics = @{
+          Files = $totalFiles
+          TotalLines = 0
+          Functions = 0
+          AverageComplexity = 0
+          Documentation = 0
+          ErrorHandling = 0
+        }
+        
+        foreach ($file in $scriptFiles) {
+          $content = Get-Content $file.FullName
+          $rawContent = Get-Content $file.FullName -Raw
+          
+          # Count lines (excluding empty lines and comments)
+          $codeLines = ($content | Where-Object { $_ -notmatch '^\s*$' -and $_ -notmatch '^\s*#' }).Count
+          $totalLines += $codeLines
+          
+          # Count functions
+          $functions = ([regex]::Matches($rawContent, 'function\s+\w+')).Count
+          $totalFunctions += $functions
+          
+          # Check for documentation (comment-based help)
+          if ($rawContent -match '\.SYNOPSIS|\.DESCRIPTION|\.PARAMETER|\.EXAMPLE') {
+            $qualityMetrics.Documentation++
+          }
+          
+          # Check for error handling
+          if ($rawContent -match 'try\s*\{.*\}\s*catch|trap\s*\{|\$ErrorActionPreference|\$Error\.Clear\(\)') {
+            $qualityMetrics.ErrorHandling++
+          }
+          
+          # Simple complexity estimation (nested blocks, loops, conditions)
+          $complexity = ([regex]::Matches($rawContent, '(if\s*\(|foreach\s*\(|while\s*\(|switch\s*\(|try\s*\{)')).Count
+          $complexityScore += $complexity
+        }
+        
+        $qualityMetrics.TotalLines = $totalLines
+        $qualityMetrics.Functions = $totalFunctions
+        $qualityMetrics.AverageComplexity = if ($totalFiles -gt 0) { [math]::Round($complexityScore / $totalFiles, 2) } else { 0 }
+        
+        # Generate quality report
+        Write-Host "[METRICS] Code Quality Report:" -ForegroundColor Cyan
+        Write-Host "= * 50" -ForegroundColor Gray
+        Write-Host "[INFO] Total Files: $($qualityMetrics.Files)" -ForegroundColor White
+        Write-Host "[INFO] Total Lines of Code: $($qualityMetrics.TotalLines)" -ForegroundColor White
+        Write-Host "[INFO] Total Functions: $($qualityMetrics.Functions)" -ForegroundColor White
+        Write-Host "[INFO] Average Complexity: $($qualityMetrics.AverageComplexity)" -ForegroundColor White
+        Write-Host "[INFO] Files with Documentation: $($qualityMetrics.Documentation) ($([math]::Round(($qualityMetrics.Documentation / $totalFiles) * 100, 1))%)" -ForegroundColor $(if($qualityMetrics.Documentation / $totalFiles -gt 0.7){'Green'}else{'Yellow'})
+        Write-Host "[INFO] Files with Error Handling: $($qualityMetrics.ErrorHandling) ($([math]::Round(($qualityMetrics.ErrorHandling / $totalFiles) * 100, 1))%)" -ForegroundColor $(if($qualityMetrics.ErrorHandling / $totalFiles -gt 0.8){'Green'}else{'Yellow'})
+        
+        # Quality score calculation
+        $documentationScore = ($qualityMetrics.Documentation / $totalFiles) * 30
+        $errorHandlingScore = ($qualityMetrics.ErrorHandling / $totalFiles) * 40
+        $complexityScore = if ($qualityMetrics.AverageComplexity -lt 5) { 30 } elseif ($qualityMetrics.AverageComplexity -lt 10) { 20 } else { 10 }
+        
+        $overallQuality = $documentationScore + $errorHandlingScore + $complexityScore
+        
+        Write-Host "= * 50" -ForegroundColor Gray
+        Write-Host "[SUMMARY] Overall Quality Score: $([math]::Round($overallQuality, 1))/100" -ForegroundColor $(if($overallQuality -ge 80){'Green'}elseif($overallQuality -ge 60){'Yellow'}else{'Red'})
+        
+        if ($overallQuality -lt 60) {
+          Write-Host "[WARNING] Code quality below recommended threshold" -ForegroundColor Yellow
+        } else {
+          Write-Host "[SUCCESS] Code quality meets standards" -ForegroundColor Green
+        }
