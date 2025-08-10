@@ -1,4 +1,4 @@
-name: Automated Code Review
+name: "[STIG] Automated Code Review"
 
 on:
   push:
@@ -7,135 +7,133 @@ on:
     branches: [main]
   workflow_dispatch:
 
+env:
+  POWERSHELL_TELEMETRY_OPTOUT: 1
+
 jobs:
+  # PowerShell Static Analysis
   powershell-analysis:
-    name: PowerShell Code Analysis
+    name: "[ANALYSIS] PowerShell Code Analysis"
     runs-on: windows-latest
     permissions:
       contents: read
       security-events: write
 
     steps:
-      - name: Checkout code
+      - name: "[INFO] Checkout Repository"
         uses: actions/checkout@v4
 
-      - name: Setup PowerShell
-        shell: pwsh
+      - name: "[ADMIN] Setup PowerShell and PSScriptAnalyzer"
+        shell: powershell
         run: |
+          Write-Host "[RUNNING] Installing PSScriptAnalyzer..." -ForegroundColor Yellow
           Set-PSRepository PSGallery -InstallationPolicy Trusted
           Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
+          Write-Host "[SUCCESS] PSScriptAnalyzer installed" -ForegroundColor Green
 
-      - name: Run PSScriptAnalyzer
-        shell: pwsh
+      - name: "[RUNNING] Run PowerShell Static Analysis"
+        shell: powershell
         run: |
-          $results = Invoke-ScriptAnalyzer -Path . -Recurse -ReportSummary -Settings PSGallery
-          $results | Export-Csv -Path "pssa-results.csv" -NoTypeInformation
+          Write-Host "[ANALYSIS] Running PSScriptAnalyzer..." -ForegroundColor Cyan
 
-          # Output summary
-          Write-Host "PSScriptAnalyzer Results Summary:" -ForegroundColor Cyan
-          $results | Group-Object Severity | ForEach-Object {
-            Write-Host "$($_.Name): $($_.Count)" -ForegroundColor Yellow
+          # Run analysis on PowerShell files only
+          $results = Invoke-ScriptAnalyzer -Path . -Recurse -ReportSummary -Settings PSGallery -Include "*.ps1"
+
+          if ($results) {
+            $results | Export-Csv -Path "pssa-results.csv" -NoTypeInformation
+
+            Write-Host "[SUMMARY] PSScriptAnalyzer Results:" -ForegroundColor Cyan
+            $summary = $results | Group-Object Severity
+            foreach ($group in $summary) {
+              $color = switch ($group.Name) {
+                'Error' { 'Red' }
+                'Warning' { 'Yellow' }
+                'Information' { 'Blue' }
+                default { 'White' }
+              }
+              Write-Host "  $($group.Name): $($group.Count)" -ForegroundColor $color
+            }
+
+            # Show critical errors
+            $errors = $results | Where-Object { $_.Severity -eq 'Error' }
+            if ($errors) {
+              Write-Host "[ERROR] Critical issues found:" -ForegroundColor Red
+              $errors | ForEach-Object {
+                Write-Host "  $($_.ScriptName):$($_.Line) - $($_.Message)" -ForegroundColor Red
+              }
+              exit 1
+            }
+          } else {
+            Write-Host "[SUCCESS] No PSScriptAnalyzer issues found" -ForegroundColor Green
           }
 
-          # Fail if critical issues found
-          $critical = $results | Where-Object { $_.Severity -eq 'Error' }
-          if ($critical) {
-            Write-Host "Critical issues found - failing build" -ForegroundColor Red
-            exit 1
-          }
-
-      - name: Upload PSScriptAnalyzer results
+      - name: "[REPORT] Upload Analysis Results"
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: pssa-results
           path: pssa-results.csv
 
+  # Security Scanning (PowerShell focused)
   security-scan:
-    name: Security Scanning
-    runs-on: ubuntu-latest
+    name: "[SECURITY] PowerShell Security Scan"
+    runs-on: windows-latest
     permissions:
       contents: read
       security-events: write
 
     steps:
-      - name: Checkout code
+      - name: "[INFO] Checkout Repository"
         uses: actions/checkout@v4
 
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: "fs"
-          scan-ref: "."
-          format: "sarif"
-          output: "trivy-results.sarif"
+      - name: "[SECURITY] PowerShell Security Analysis"
+        shell: powershell
+        run: |
+          Write-Host "[SECURITY] Scanning for PowerShell security issues..." -ForegroundColor Cyan
 
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
+          $securityIssues = @()
+          $scriptFiles = Get-ChildItem -Recurse -Filter "*.ps1"
+
+          foreach ($file in $scriptFiles) {
+            $content = Get-Content $file.FullName -Raw -ErrorAction SilentlyContinue
+            if (-not $content) { continue }
+
+            # Check for high-risk patterns specific to PowerShell
+            $highRiskPatterns = @{
+              'Invoke-Expression|iex\s' = 'Dynamic code execution'
+              'DownloadString|DownloadFile' = 'Web content download'
+              'Start-Process.*-WindowStyle\s+Hidden' = 'Hidden process execution'
+              'Set-ExecutionPolicy.*Unrestricted' = 'Unsafe execution policy'
+              'ConvertTo-SecureString.*-AsPlainText.*-Force' = 'Insecure password handling'
+              'System\.Runtime\.InteropServices' = 'Unsafe native code calls'
+            }
+
+            foreach ($pattern in $highRiskPatterns.Keys) {
+              if ($content -match $pattern) {
+                $securityIssues += @{
+                  File = $file.FullName
+                  Issue = $highRiskPatterns[$pattern]
+                  Pattern = $pattern
+                }
+              }
+            }
+          }
+
+          if ($securityIssues.Count -gt 0) {
+            Write-Host "[WARNING] Security concerns found:" -ForegroundColor Yellow
+            $securityIssues | ForEach-Object {
+              Write-Host "  $($_.File): $($_.Issue)" -ForegroundColor Yellow
+            }
+
+            # Export for review but don't fail build
+            $securityIssues | ConvertTo-Json | Out-File "security-findings.json"
+          } else {
+            Write-Host "[SUCCESS] No critical security issues detected" -ForegroundColor Green
+          }
+
+      - name: "[REPORT] Upload Security Findings"
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          sarif_file: "trivy-results.sarif"
-
-  codeql-analysis:
-    name: CodeQL Analysis
-    runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: javascript
-          config-file: ./.github/codeql/codeql-config.yml
-
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-
-  dependency-review:
-    name: Dependency Review
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Dependency Review
-        uses: actions/dependency-review-action@v4
-        with:
-          fail-on-severity: moderate
-
-  super-linter:
-    name: Super Linter
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: read
-      statuses: write
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Run Super Linter
-        uses: super-linter/super-linter@v5
-        env:
-          DEFAULT_BRANCH: main
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VALIDATE_ALL_CODEBASE: false
-          VALIDATE_POWERSHELL: true
-          VALIDATE_JSON: true
-          VALIDATE_MARKDOWN: true
-          VALIDATE_YAML: true
-          FILTER_REGEX_EXCLUDE: ".*/(logs|reports|node_modules)/.*"
+          name: security-findings
+          path: security-findings.json

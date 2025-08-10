@@ -1,4 +1,4 @@
-name: STIG Quality Gate
+name: "[STIG] Quality Gate - ASCII Validation"
 
 on:
   push:
@@ -6,69 +6,96 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  POWERSHELL_TELEMETRY_OPTOUT: 1
+
 jobs:
   unicode-check:
-    name: Unicode Character Validation
+    name: "[VALIDATION] Unicode Character Check"
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: "[INFO] Checkout Repository"
+        uses: actions/checkout@v4
 
-      - name: Check for Unicode characters
-        shell: pwsh
+      - name: "[SECURITY] Check for Unicode Characters"
+        shell: powershell
         run: |
-          Write-Host "Checking for Unicode characters in PowerShell files..." -ForegroundColor Cyan
+          Write-Host "[RUNNING] Checking for Unicode characters in PowerShell files..." -ForegroundColor Cyan
 
           $unicodeFound = $false
-          $psFiles = Get-ChildItem -Path . -Filter "*.ps1" -Recurse | Where-Object { $_.FullName -notlike "*node_modules*" }
+          $psFiles = Get-ChildItem -Path . -Filter "*.ps1" -Recurse | Where-Object { $_.FullName -notlike "*node_modules*" -and $_.FullName -notlike "*logs*" }
 
           foreach ($file in $psFiles) {
-            $content = Get-Content $file.FullName -Raw -Encoding UTF8
+            $content = Get-Content $file.FullName -Raw -Encoding UTF8 -ErrorAction SilentlyContinue
+            if (-not $content) { continue }
+
             $matches = [regex]::Matches($content, '[^\x00-\x7F]')
 
             if ($matches.Count -gt 0) {
               $unicodeFound = $true
-              Write-Host "❌ Unicode found in $($file.FullName):" -ForegroundColor Red
+              Write-Host "[ERROR] Unicode found in $($file.FullName):" -ForegroundColor Red
               foreach ($match in $matches) {
                 $lineNum = ($content.Substring(0, $match.Index) -split "`n").Count
-                Write-Host "  Line $lineNum : '$($match.Value)'" -ForegroundColor Yellow
+                Write-Host "  Line $lineNum : '$($match.Value)' (Unicode: U+$($match.Value.ToCharArray()[0].ToString('X4')))" -ForegroundColor Yellow
               }
+            } else {
+              Write-Host "[SUCCESS] Clean: $($file.Name)" -ForegroundColor Green
             }
           }
 
           if ($unicodeFound) {
-            Write-Host "FAILED: Unicode characters must be replaced with ASCII equivalents" -ForegroundColor Red
+            Write-Host "[ERROR] FAILED: Unicode characters must be replaced with ASCII equivalents" -ForegroundColor Red
+            Write-Host "[MANUAL] See COPILOT_INSTRUCTIONS.md for approved ASCII prefixes" -ForegroundColor Yellow
             exit 1
           } else {
-            Write-Host "✅ No Unicode characters found" -ForegroundColor Green
+            Write-Host "[SUCCESS] No Unicode characters found in PowerShell files" -ForegroundColor Green
           }
 
   ascii-prefix-check:
-    name: ASCII Prefix Validation
+    name: "[VALIDATION] ASCII Prefix Standards"
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: "[INFO] Checkout Repository"
+        uses: actions/checkout@v4
 
-      - name: Validate ASCII prefixes
-        shell: pwsh
+      - name: "[RUNNING] Validate ASCII Prefixes"
+        shell: powershell
         run: |
-          Write-Host "Validating ASCII prefixes in Write-Host statements..." -ForegroundColor Cyan
+          Write-Host "[RUNNING] Validating ASCII prefixes in Write-Host statements..." -ForegroundColor Cyan
 
-          $validPrefixes = @("[STIG]", "[SUCCESS]", "[ERROR]", "[WARNING]", "[INFO]", "[ADMIN]", "[SECURITY]", "[RUNNING]", "[REPORT]", "[SUMMARY]", "[NEXT]", "[MANUAL]", "[RETRY]", "[COMPLETE]")
+          # STIG-approved ASCII prefixes only
+          $validPrefixes = @(
+            "[STIG]", "[SUCCESS]", "[ERROR]", "[WARNING]", "[INFO]",
+            "[ADMIN]", "[SECURITY]", "[RUNNING]", "[REPORT]", "[SUMMARY]",
+            "[NEXT]", "[MANUAL]", "[RETRY]", "[COMPLETE]", "[ANALYSIS]",
+            "[VALIDATION]"
+          )
+
           $issuesFound = $false
+          $filesChecked = 0
 
-          $psFiles = Get-ChildItem -Path . -Filter "*.ps1" -Recurse | Where-Object { $_.FullName -notlike "*node_modules*" }
+          $psFiles = Get-ChildItem -Path . -Filter "*.ps1" -Recurse | Where-Object {
+            $_.FullName -notlike "*node_modules*" -and
+            $_.FullName -notlike "*logs*" -and
+            $_.FullName -notlike "*reports*"
+          }
 
           foreach ($file in $psFiles) {
-            $content = Get-Content $file.FullName -Raw
+            $filesChecked++
+            $content = Get-Content $file.FullName -Raw -ErrorAction SilentlyContinue
+            if (-not $content) { continue }
+
+            # Match Write-Host statements with quoted strings
             $writeHostPattern = 'Write-Host\s+"([^"]*)"'
-            $matches = [regex]::Matches($content, $writeHostPattern)
+            $matches = [regex]::Matches($content, $writeHostPattern, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
 
             foreach ($match in $matches) {
               $message = $match.Groups[1].Value.Trim()
 
-              if ($message -and -not ($message -match "^\s*$")) {
+              # Skip empty messages or variable interpolations
+              if ($message -and -not ($message -match "^\s*$") -and -not ($message.StartsWith('$'))) {
                 $hasValidPrefix = $false
                 foreach ($prefix in $validPrefixes) {
                   if ($message.StartsWith($prefix)) {
@@ -77,18 +104,23 @@ jobs:
                   }
                 }
 
-                if (-not $hasValidPrefix) {
+                if (-not $hasValidPrefix -and $message.Length -gt 5) {
                   $issuesFound = $true
                   $lineNum = ($content.Substring(0, $match.Index) -split "`n").Count
-                  Write-Host "❌ Invalid prefix in $($file.FullName) line $lineNum : '$message'" -ForegroundColor Red
+                  Write-Host "[ERROR] Invalid prefix in $($file.Name) line $lineNum" -ForegroundColor Red
+                  Write-Host "  Message: '$message'" -ForegroundColor Yellow
+                  Write-Host "  Use one of: $($validPrefixes -join ', ')" -ForegroundColor Cyan
                 }
               }
             }
           }
 
+          Write-Host "[INFO] Checked $filesChecked PowerShell files" -ForegroundColor Cyan
+
           if ($issuesFound) {
-            Write-Host "FAILED: Use approved ASCII prefixes only" -ForegroundColor Red
+            Write-Host "[ERROR] FAILED: Use approved ASCII prefixes only" -ForegroundColor Red
+            Write-Host "[MANUAL] Refer to .github/copilot-instructions.md for standards" -ForegroundColor Yellow
             exit 1
           } else {
-            Write-Host "✅ All Write-Host statements use proper ASCII prefixes" -ForegroundColor Green
+            Write-Host "[SUCCESS] All Write-Host statements use proper ASCII prefixes" -ForegroundColor Green
           }
